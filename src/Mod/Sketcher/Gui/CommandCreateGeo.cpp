@@ -3375,6 +3375,7 @@ bool CmdSketcherCreatePentagon::isActive(void)
 }
 
 
+
 DEF_STD_CMD_A(CmdSketcherCreateHexagon);
 
 CmdSketcherCreateHexagon::CmdSketcherCreateHexagon()
@@ -3402,6 +3403,7 @@ bool CmdSketcherCreateHexagon::isActive(void)
 }
 
 DEF_STD_CMD_A(CmdSketcherCreateHeptagon);
+
 CmdSketcherCreateHeptagon::CmdSketcherCreateHeptagon()
   : Command("Sketcher_CreateHeptagon")
 {
