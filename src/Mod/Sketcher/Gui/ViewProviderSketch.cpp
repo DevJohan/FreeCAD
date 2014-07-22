@@ -104,6 +104,8 @@
 #include "DrawSketchHandler.h"
 #include "TaskDlgEditSketch.h"
 
+#include <Mod/Sketcher/App/Sketch_exp.h>
+
 // The first is used to point at a SoDatumLabel for some
 // constraints, and at a SoMaterial for others...
 #define CONSTRAINT_SEPARATOR_INDEX_MATERIAL_OR_DATUMLABEL 0
@@ -129,6 +131,11 @@ SbColor ViewProviderSketch::ConstrIcoColor        (1.0f,0.149f,0.0f);   // #FF26
 SbColor ViewProviderSketch::PreselectColor        (0.88f,0.88f,0.0f);   // #E1E100 -> (225,225,  0)
 SbColor ViewProviderSketch::SelectColor           (0.11f,0.68f,0.11f);  // #1CAD1C -> ( 28,173, 28)
 SbColor ViewProviderSketch::PreselectSelectedColor(0.36f,0.48f,0.11f);  // #5D7B1C -> ( 93,123, 28)
+
+// Experimental solver values
+SbColor ViewProviderSketch::VertexColor_exp           (0.65f,0.55f,0.0f);   // #FF2600 -> (255, 38,  0)
+SbColor ViewProviderSketch::CurveColor_exp            (.5f,.5f,.7f);     // #FFFFFF -> (255,255,255)
+
 // Variables for holding previous click
 SbTime  ViewProviderSketch::prvClickTime;
 SbVec3f ViewProviderSketch::prvClickPoint;
@@ -158,7 +165,13 @@ struct EditData {
     PointsCoordinate(0),
     CurvesCoordinate(0),
     CurveSet(0), EditCurveSet(0), RootCrossSet(0),
-    PointSet(0), pickStyleAxes(0)
+    PointSet(0), pickStyleAxes(0),
+    PointsMaterials_exp(0),
+    CurvesMaterials_exp(0),
+    PointsCoordinate_exp(0),
+    CurvesCoordinate_exp(0),
+    CurveSet_exp(0),
+    PointSet_exp(0)
     {}
 
     // pointer to the active handler for new sketch objects
@@ -184,6 +197,7 @@ struct EditData {
 
     // instance of the solver
     Sketcher::Sketch ActSketch;
+    Sketcher_exp::Sketch_exp ActSketch_exp;
     // container to track our own selected parts
     std::set<int> SelPointSet;
     std::set<int> SelCurvSet; // also holds cross axes at -1 and -2
@@ -223,6 +237,13 @@ struct EditData {
 
     SoGroup       *constrGroup;
     SoPickStyle   *pickStyleAxes;
+
+    SoMaterial    *PointsMaterials_exp;
+    SoMaterial    *CurvesMaterials_exp;
+    SoCoordinate3 *PointsCoordinate_exp;
+    SoCoordinate3 *CurvesCoordinate_exp;
+    SoLineSet     *CurveSet_exp;
+    SoMarkerSet   *PointSet_exp;
 };
 
 
@@ -930,7 +951,8 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
     if (Mode != STATUS_SKETCH_DragPoint &&
         Mode != STATUS_SKETCH_DragCurve &&
         Mode != STATUS_SKETCH_DragConstraint &&
-        Mode != STATUS_SKETCH_UseRubberBand) {
+        Mode != STATUS_SKETCH_UseRubberBand)
+    {
 
         SoPickedPoint *pp = this->getPointOnRay(cursorPos, viewer);
 
@@ -949,13 +971,16 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
             return false;
         case STATUS_SELECT_Point:
             if (!edit->ActSketch.hasConflicts() &&
-                edit->PreselectPoint != -1 && edit->DragPoint != edit->PreselectPoint) {
+                edit->PreselectPoint != -1 &&
+                edit->DragPoint != edit->PreselectPoint)
+            {
                 Mode = STATUS_SKETCH_DragPoint;
                 edit->DragPoint = edit->PreselectPoint;
                 int GeoId;
                 Sketcher::PointPos PosId;
                 getSketchObject()->getGeoVertexIndex(edit->DragPoint, GeoId, PosId);
                 edit->ActSketch.initMove(GeoId, PosId, false);
+                edit->ActSketch_exp.initMove( GeoId, PosId, false );
                 relative = false;
                 xInit = 0;
                 yInit = 0;
@@ -969,10 +994,13 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
             return true;
         case STATUS_SELECT_Edge:
             if (!edit->ActSketch.hasConflicts() &&
-                edit->PreselectCurve != -1 && edit->DragCurve != edit->PreselectCurve) {
+                edit->PreselectCurve != -1 &&
+                edit->DragCurve != edit->PreselectCurve)
+            {
                 Mode = STATUS_SKETCH_DragCurve;
                 edit->DragCurve = edit->PreselectCurve;
                 edit->ActSketch.initMove(edit->DragCurve, Sketcher::none, false);
+                edit->ActSketch_exp.initMove(edit->DragCurve, Sketcher::none, false);
                 const Part::Geometry *geo = getSketchObject()->getGeometry(edit->DragCurve);
                 if (geo->getTypeId() == Part::GeomLineSegment::getClassTypeId()) {
                     relative = true;
@@ -1006,12 +1034,19 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
                 Sketcher::PointPos PosId;
                 getSketchObject()->getGeoVertexIndex(edit->DragPoint, GeoId, PosId);
                 Base::Vector3d vec(x-xInit,y-yInit,0);
+                if (edit->ActSketch_exp.movePoint(GeoId, PosId, vec, relative) == 0) {
+                    signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,true);
+                } else {
+                    signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,false);
+                }
                 if (edit->ActSketch.movePoint(GeoId, PosId, vec, relative) == 0) {
                     setPositionText(Base::Vector2D(x,y));
                     draw(true);
                     signalSolved(QString::fromLatin1("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
+                    signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
                 } else {
                     signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
+                    signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,false);
                     //Base::Console().Log("Error solving:%d\n",ret);
                 }
             }
@@ -1019,12 +1054,19 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
         case STATUS_SKETCH_DragCurve:
             if (edit->DragCurve != -1) {
                 Base::Vector3d vec(x-xInit,y-yInit,0);
+                if (edit->ActSketch_exp.movePoint( edit->DragCurve, Sketcher::none, vec, relative )){
+                    signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,true);
+                }else{
+                    signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,false);
+                }
                 if (edit->ActSketch.movePoint(edit->DragCurve, Sketcher::none, vec, relative) == 0) {
                     setPositionText(Base::Vector2D(x,y));
                     draw(true);
                     signalSolved(QString::fromLatin1("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
+                    signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
                 } else {
                     signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
+                    signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,false);
                 }
             }
             return true;
@@ -1074,8 +1116,10 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
     return false;
 }
 
-void ViewProviderSketch::moveConstraint(int constNum, const Base::Vector2D &toPos)
-{
+void ViewProviderSketch::moveConstraint(
+		int constNum,
+		const Base::Vector2D &toPos
+){
     // are we in edit?
     if (!edit)
         return;
@@ -1092,8 +1136,11 @@ void ViewProviderSketch::moveConstraint(int constNum, const Base::Vector2D &toPo
     assert((Constr->First >= -extGeoCount && Constr->First < intGeoCount)
            || Constr->First != Constraint::GeoUndef);
 
-    if (Constr->Type == Distance || Constr->Type == DistanceX || Constr->Type == DistanceY ||
-        Constr->Type == Radius) {
+    if (	Constr->Type == Distance ||
+    		Constr->Type == DistanceX ||
+    		Constr->Type == DistanceY ||
+    		Constr->Type == Radius)
+    {
 
         Base::Vector3d p1(0.,0.,0.), p2(0.,0.,0.);
         if (Constr->SecondPos != Sketcher::none) { // point to point distance
@@ -1213,10 +1260,11 @@ void ViewProviderSketch::moveConstraint(int constNum, const Base::Vector2D &toPo
     draw(true);
 }
 
-Base::Vector3d ViewProviderSketch::seekConstraintPosition(const Base::Vector3d &origPos,
-                                                          const Base::Vector3d &norm,
-                                                          const Base::Vector3d &dir, float step,
-                                                          const SoNode *constraint)
+Base::Vector3d ViewProviderSketch::seekConstraintPosition(
+		const Base::Vector3d &origPos,
+		const Base::Vector3d &norm,
+		const Base::Vector3d &dir, float step,
+		const SoNode *constraint)
 {
     assert(edit);
     Gui::MDIView *mdi = Gui::Application::Instance->activeDocument()->getActiveView();
@@ -1272,8 +1320,9 @@ bool ViewProviderSketch::isSelectable(void) const
         return PartGui::ViewProvider2DObject::isSelectable();
 }
 
-void ViewProviderSketch::onSelectionChanged(const Gui::SelectionChanges& msg)
-{
+void ViewProviderSketch::onSelectionChanged(
+		const Gui::SelectionChanges& msg
+){
     // are we in edit?
     if (edit) {
         bool handled=false;
@@ -1702,9 +1751,11 @@ SbVec3s ViewProviderSketch::getDisplayedSize(const SoImage *iconPtr) const
     return iconSize;
 }
 
-void ViewProviderSketch::doBoxSelection(const SbVec2s &startPos, const SbVec2s &endPos,
-                                        const Gui::View3DInventorViewer *viewer)
-{
+void ViewProviderSketch::doBoxSelection(
+		const SbVec2s &startPos,
+		const SbVec2s &endPos,
+		const Gui::View3DInventorViewer *viewer
+){
     std::vector<SbVec2s> corners0;
     corners0.push_back(startPos);
     corners0.push_back(endPos);
@@ -1913,6 +1964,26 @@ void ViewProviderSketch::updateColor(void)
 {
     assert(edit);
     //Base::Console().Log("Draw preseletion\n");
+
+    { // Experimental solver
+        int PtNum_exp = edit->PointsMaterials_exp->diffuseColor.getNum();
+        SbColor *pcolor_exp = edit->PointsMaterials_exp->diffuseColor.startEditing();
+        int CurvNum_exp = edit->CurvesMaterials_exp->diffuseColor.getNum();
+        SbColor *color_exp = edit->CurvesMaterials_exp->diffuseColor.startEditing();
+
+        // colors of the point set
+        for (int  i=0; i < PtNum_exp; i++)
+        	pcolor_exp[i] = VertexColor_exp;
+
+        // colors of the curves
+        for (int  i=0; i < CurvNum_exp; i++)
+            color_exp[i] = CurveColor_exp;
+
+        // end editing
+        edit->CurvesMaterials->diffuseColor.finishEditing();
+        edit->PointsMaterials->diffuseColor.finishEditing();
+    }
+
 
     int PtNum = edit->PointsMaterials->diffuseColor.getNum();
     SbColor *pcolor = edit->PointsMaterials->diffuseColor.startEditing();
@@ -2627,10 +2698,10 @@ void ViewProviderSketch::draw(bool temp)
         else if ((*it)->getTypeId() == Part::GeomLineSegment::getClassTypeId()) { // add a line
             const Part::GeomLineSegment *lineSeg = dynamic_cast<const Part::GeomLineSegment *>(*it);
             // create the definition struct for that geom
-            Coords.push_back(lineSeg->getStartPoint());
-            Coords.push_back(lineSeg->getEndPoint());
-            Points.push_back(lineSeg->getStartPoint());
-            Points.push_back(lineSeg->getEndPoint());
+            Coords.push_back( lineSeg->getStartPoint() );
+            Coords.push_back( lineSeg->getEndPoint()   );
+            Points.push_back( lineSeg->getStartPoint() );
+            Points.push_back( lineSeg->getEndPoint()   );
             Index.push_back(2);
             edit->CurvIdToGeoId.push_back(GeoId);
         }
@@ -2721,6 +2792,124 @@ void ViewProviderSketch::draw(bool temp)
         }
     }
 
+    std::vector<Part::Geometry *> tempGeo_exp;
+    if (temp){ // secondary Experimental solver
+        // Render Geometry ===================================================
+        std::vector<Base::Vector3d> Coords_exp;
+        std::vector<Base::Vector3d> Points_exp;
+        std::vector<unsigned int> Index_exp;
+
+    	tempGeo_exp = edit->ActSketch_exp.extractGeometry(true, true); // with memory allocation
+    	const std::vector<Part::Geometry *>* geomlist_exp = &tempGeo_exp;
+
+
+    	assert(int(geomlist_exp->size()) == extGeoCount + intGeoCount);
+    	assert(int(geomlist_exp->size()) >= 2);
+
+
+    	// RootPoint
+    	Points_exp.push_back(Base::Vector3d(0.,0.,0.));
+
+    	for (std::vector<Part::Geometry *>::const_iterator it_exp = geomlist_exp->begin(); it_exp != geomlist_exp->end()-2; ++it_exp) {
+    		if ((*it_exp)->getTypeId() == Part::GeomPoint::getClassTypeId()) { // add a point
+    			const Part::GeomPoint *point = dynamic_cast<const Part::GeomPoint *>(*it_exp);
+    			Points_exp.push_back(point->getPoint());
+    		}
+    		else if ((*it_exp)->getTypeId() == Part::GeomLineSegment::getClassTypeId()) { // add a line
+    			const Part::GeomLineSegment *lineSeg = dynamic_cast<const Part::GeomLineSegment *>(*it_exp);
+    			// create the definition struct for that geom
+    			Coords_exp.push_back( lineSeg->getStartPoint() );
+    			Coords_exp.push_back( lineSeg->getEndPoint()   );
+    			Points_exp.push_back( lineSeg->getStartPoint() );
+    			Points_exp.push_back( lineSeg->getEndPoint()   );
+    			Index_exp.push_back(2);
+    		}
+    		else if ((*it_exp)->getTypeId() == Part::GeomCircle::getClassTypeId()) { // add a circle
+    			const Part::GeomCircle *circle = dynamic_cast<const Part::GeomCircle *>(*it_exp);
+    			Handle_Geom_Circle curve = Handle_Geom_Circle::DownCast(circle->handle());
+
+    			int countSegments = 50;
+    			Base::Vector3d center = circle->getCenter();
+    			double segment = (2 * M_PI) / countSegments;
+    			for (int i=0; i < countSegments; i++) {
+    				gp_Pnt pnt = curve->Value(i*segment);
+    				Coords_exp.push_back(Base::Vector3d(pnt.X(), pnt.Y(), pnt.Z()));
+    			}
+
+    			gp_Pnt pnt = curve->Value(0);
+    			Coords_exp.push_back(Base::Vector3d(pnt.X(), pnt.Y(), pnt.Z()));
+
+    			Index_exp.push_back(countSegments+1);
+    			Points_exp.push_back(center);
+    		}
+    		else if ((*it_exp)->getTypeId() == Part::GeomArcOfCircle::getClassTypeId()) { // add an arc
+    			const Part::GeomArcOfCircle *arc = dynamic_cast<const Part::GeomArcOfCircle *>(*it_exp);
+    			Handle_Geom_TrimmedCurve curve = Handle_Geom_TrimmedCurve::DownCast(arc->handle());
+
+    			double startangle, endangle;
+    			arc->getRange(startangle, endangle);
+    			if (startangle > endangle) // if arc is reversed
+    				std::swap(startangle, endangle);
+
+    			double range = endangle-startangle;
+    			int countSegments = std::max(6, int(50.0 * range / (2 * M_PI)));
+    			double segment = range / countSegments;
+
+    			Base::Vector3d center = arc->getCenter();
+    			Base::Vector3d start  = arc->getStartPoint();
+    			Base::Vector3d end    = arc->getEndPoint();
+
+    			for (int i=0; i < countSegments; i++) {
+    				gp_Pnt pnt = curve->Value(startangle);
+    				Coords_exp.push_back(Base::Vector3d(pnt.X(), pnt.Y(), pnt.Z()));
+    				startangle += segment;
+    			}
+
+    			// end point
+    			gp_Pnt pnt = curve->Value(endangle);
+    			Coords_exp.push_back(Base::Vector3d(pnt.X(), pnt.Y(), pnt.Z()));
+
+    			Index_exp.push_back(countSegments+1);
+    			Points_exp.push_back(start);
+    			Points_exp.push_back(end);
+    			Points_exp.push_back(center);
+    		}
+    		else if ((*it_exp)->getTypeId() == Part::GeomBSplineCurve::getClassTypeId()) { // add a bspline
+    			const Part::GeomBSplineCurve *spline = dynamic_cast<const Part::GeomBSplineCurve *>(*it_exp);
+    			Handle_Geom_BSplineCurve curve = Handle_Geom_BSplineCurve::DownCast(spline->handle());
+
+    			double first = curve->FirstParameter();
+    			double last = curve->LastParameter();
+    			if (first > last) // if arc is reversed
+    				std::swap(first, last);
+
+    			double range = last-first;
+    			int countSegments = 50;
+    			double segment = range / countSegments;
+
+    			for (int i=0; i < countSegments; i++) {
+    				gp_Pnt pnt = curve->Value(first);
+    				Coords_exp.push_back(Base::Vector3d(pnt.X(), pnt.Y(), pnt.Z()));
+    				first += segment;
+    			}
+
+    			// end point
+    			gp_Pnt end = curve->Value(last);
+    			Coords_exp.push_back(Base::Vector3d(end.X(), end.Y(), end.Z()));
+
+    			std::vector<Base::Vector3d> poles = spline->getPoles();
+    			for (std::vector<Base::Vector3d>::iterator it = poles.begin(); it != poles.end(); ++it) {
+    				Points_exp.push_back(*it);
+    			}
+
+    			Index_exp.push_back(countSegments+1);
+    		}
+    		else {
+    		}
+    	}
+
+    }
+
     edit->CurvesCoordinate->point.setNum(Coords.size());
     edit->CurveSet->numVertices.setNum(Index.size());
     edit->CurvesMaterials->diffuseColor.setNum(Index.size());
@@ -2746,6 +2935,34 @@ void ViewProviderSketch::draw(bool temp)
     edit->CurvesCoordinate->point.finishEditing();
     edit->CurveSet->numVertices.finishEditing();
     edit->PointsCoordinate->point.finishEditing();
+
+    {
+        edit->CurvesCoordinate_exp->point.setNum(Coords.size());
+        edit->CurveSet_exp->numVertices.setNum(Index.size());
+        edit->CurvesMaterials_exp->diffuseColor.setNum(Index.size());
+        edit->PointsCoordinate_exp->point.setNum(Points.size());
+        edit->PointsMaterials_exp->diffuseColor.setNum(Points.size());
+
+        SbVec3f *verts_exp = edit->CurvesCoordinate_exp->point.startEditing();
+        int32_t *index_exp = edit->CurveSet_exp->numVertices.startEditing();
+        SbVec3f *pverts_exp = edit->PointsCoordinate_exp->point.startEditing();
+
+        int i=0; // setting up the line set
+        for (std::vector<Base::Vector3d>::const_iterator it = Coords.begin(); it != Coords.end(); ++it,i++)
+            verts_exp[i].setValue(it->x,it->y,zLines);
+
+        i=0; // setting up the indexes of the line set
+        for (std::vector<unsigned int>::const_iterator it = Index.begin(); it != Index.end(); ++it,i++)
+            index_exp[i] = *it;
+
+        i=0; // setting up the point set
+        for (std::vector<Base::Vector3d>::const_iterator it = Points.begin(); it != Points.end(); ++it,i++)
+            pverts_exp[i].setValue(it->x,it->y,zPoints);
+
+        edit->CurvesCoordinate_exp->point.finishEditing();
+        edit->CurveSet_exp->numVertices.finishEditing();
+        edit->PointsCoordinate_exp->point.finishEditing();
+    }
 
     // set cross coordinates
     edit->RootCrossSet->numVertices.set1Value(0,2);
@@ -3334,7 +3551,24 @@ Restart:
                     asciiText->pnts.finishEditing();
                 }
                 break;
-            case Coincident: // nothing to do for coincident
+            case Coincident: // draw circle for coincident
+            {
+            	assert(Constr->First >= -extGeoCount && Constr->First < intGeoCount);
+            	assert(Constr->Second >= -extGeoCount && Constr->Second < intGeoCount);
+
+            	Base::Vector3d pnt1 = edit->ActSketch.getPoint(Constr->First, Constr->FirstPos);
+
+            	SoDatumLabel *coincident_label = dynamic_cast<SoDatumLabel *>(sep->getChild(0));
+
+                coincident_label->datumtype    = SoDatumLabel::COINCIDENT;
+
+                coincident_label->pnts.setNum(1);
+                SbVec3f *verts = coincident_label->pnts.startEditing();
+                verts[0] = SbVec3f( pnt1.x, pnt1.y, zConstr );
+
+                coincident_label->pnts.finishEditing();
+            }
+            break;
             case None:
                 break;
         }
@@ -3347,6 +3581,10 @@ Restart:
     if (temp)
         for (std::vector<Part::Geometry *>::iterator it=tempGeo.begin(); it != tempGeo.end(); ++it)
             if (*it) delete *it;
+
+    if (temp)
+        for (std::vector<Part::Geometry *>::iterator it_exp=tempGeo_exp.begin(); it_exp != tempGeo_exp.end(); ++it_exp)
+            if (*it_exp) delete *it_exp;
 
     if (mdi && mdi->isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
         static_cast<Gui::View3DInventor *>(mdi)->getViewer()->render();
@@ -3429,8 +3667,17 @@ void ViewProviderSketch::rebuildConstraintsVisual(void)
             }
             break;
             case Coincident: // no visual for coincident so far
-                edit->vConstrType.push_back(Coincident);
-                break;
+            {
+            	SoDatumLabel *coincident_label = new SoDatumLabel();
+            	coincident_label->norm.setValue(norm);
+            	coincident_label->string = "";
+            	coincident_label->textColor = ConstrDimColor;
+
+            	sep->addChild(coincident_label);        // 0.
+
+            	edit->vConstrType.push_back(Coincident);
+            }
+            break;
             case Parallel:
             case Perpendicular:
             case Equal:
@@ -3578,10 +3825,10 @@ bool ViewProviderSketch::setEdit(int ModNum)
         sketchDlg = 0; // another sketch left open its task panel
     if (dlg && !sketchDlg) {
         QMessageBox msgBox;
-        msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
-        msgBox.setInformativeText(QObject::tr("Do you want to close this dialog?"));
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        msgBox.setDefaultButton(QMessageBox::Yes);
+        msgBox.setText( QObject::tr("A dialog is already open in the task panel"));
+        msgBox.setInformativeText( QObject::tr("Do you want to close this dialog?"));
+        msgBox.setStandardButtons( QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton( QMessageBox::Yes);
         int ret = msgBox.exec();
         if (ret == QMessageBox::Yes)
             Gui::Control().reject();
@@ -3695,8 +3942,26 @@ QString ViewProviderSketch::appendRedundantMsg(const std::vector<int> &redundant
     return msg;
 }
 
+
+void ViewProviderSketch::solveSketch_exp(void)
+{
+	Sketcher_exp::Sketch_exp& ActSketch_exp = edit->ActSketch_exp;
+    // set up the sketch and diagnose possible conflicts
+    int dofs = ActSketch_exp.setUpSketch(  getSketchObject()->getCompleteGeometry(),
+                                           getSketchObject()->Constraints.getValues(),
+                                           getSketchObject()->getExternalGeometryCount());
+    if(ActSketch_exp.solve() == 0){
+        signalSolveStatusUpdate_exp(ActSketch_exp.SolveTime,ActSketch_exp.latest_algorithm,true);
+    } else {
+        signalSolveStatusUpdate_exp(ActSketch_exp.SolveTime,ActSketch_exp.latest_algorithm,false);
+    }
+}
+
 void ViewProviderSketch::solveSketch(void)
 {
+	// Experimental solver
+	solveSketch_exp();
+
     // set up the sketch and diagnose possible conflicts
     int dofs = edit->ActSketch.setUpSketch(getSketchObject()->getCompleteGeometry(),
                                            getSketchObject()->Constraints.getValues(),
@@ -3739,9 +4004,11 @@ void ViewProviderSketch::solveSketch(void)
                     signalSetUp(tr("Under-constrained sketch with %1 degrees of freedom").arg(dofs));
             }
             signalSolved(tr("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
+            signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
         }
         else {
             signalSolved(tr("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
+            signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,false);
         }
     }
 }
@@ -3901,6 +4168,60 @@ void ViewProviderSketch::createEditInventorNodes(void)
     edit->constrGroup = new SoGroup();
     edit->constrGroup->setName("ConstraintGroup");
     edit->EditRoot->addChild(edit->constrGroup);
+
+    { //Stuff for experimental solver
+        // stuff for the points ++++++++++++++++++++++++++++++++++++++
+        SoSeparator* pointsRoot_exp = new SoSeparator;
+        edit->EditRoot->addChild(pointsRoot_exp);
+        edit->PointsMaterials_exp = new SoMaterial;
+        edit->PointsMaterials_exp->setName("PointsMaterials");
+        pointsRoot_exp->addChild(edit->PointsMaterials_exp);
+
+        SoMaterialBinding *MtlBind_exp = new SoMaterialBinding;
+        MtlBind_exp->setName("PointsMaterialBinding");
+        MtlBind_exp->value = SoMaterialBinding::PER_VERTEX;
+        pointsRoot_exp->addChild(MtlBind_exp);
+
+        edit->PointsCoordinate_exp = new SoCoordinate3;
+        edit->PointsCoordinate_exp->setName("PointsCoordinate");
+        pointsRoot_exp->addChild(edit->PointsCoordinate_exp);
+
+        SoDrawStyle *DrawStyle_exp = new SoDrawStyle;
+        DrawStyle_exp->setName("PointsDrawStyle");
+        DrawStyle_exp->pointSize = 6;
+        pointsRoot_exp->addChild(DrawStyle_exp);
+
+        edit->PointSet_exp = new SoMarkerSet;
+        edit->PointSet_exp->setName("PointSet");
+        edit->PointSet_exp->markerIndex = SoMarkerSet::TRIANGLE_FILLED_5_5;
+        pointsRoot_exp->addChild(edit->PointSet_exp);
+
+        // stuff for the Curves +++++++++++++++++++++++++++++++++++++++
+        SoSeparator* curvesRoot_exp = new SoSeparator;
+        edit->EditRoot->addChild(curvesRoot_exp);
+        edit->CurvesMaterials_exp = new SoMaterial;
+        edit->CurvesMaterials_exp->setName("CurvesMaterials");
+        curvesRoot_exp->addChild(edit->CurvesMaterials_exp);
+
+        MtlBind_exp = new SoMaterialBinding;
+        MtlBind_exp->setName("CurvesMaterialsBinding");
+        MtlBind_exp->value = SoMaterialBinding::PER_FACE;
+        curvesRoot_exp->addChild(MtlBind_exp);
+
+        edit->CurvesCoordinate_exp = new SoCoordinate3;
+        edit->CurvesCoordinate_exp->setName("CurvesCoordinate");
+        curvesRoot_exp->addChild(edit->CurvesCoordinate_exp);
+
+        DrawStyle_exp = new SoDrawStyle;
+        DrawStyle_exp->setName("CurvesDrawStyle");
+        DrawStyle_exp->lineWidth = 2;
+        curvesRoot_exp->addChild(DrawStyle_exp);
+
+        edit->CurveSet_exp = new SoLineSet;
+        edit->CurveSet_exp->setName("CurvesLineSet");
+        curvesRoot_exp->addChild(edit->CurveSet_exp);
+
+    }
 }
 
 void ViewProviderSketch::unsetEdit(int ModNum)

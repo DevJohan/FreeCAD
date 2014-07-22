@@ -41,7 +41,7 @@ using namespace SketcherGui;
 #endif
 
 /// @namespace SketcherGui @class Workbench
-TYPESYSTEM_SOURCE(SketcherGui::Workbench, Gui::StdWorkbench)
+TYPESYSTEM_SOURCE(SketcherGui::Workbench,Gui::StdWorkbench)
 
 Workbench::Workbench()
 {

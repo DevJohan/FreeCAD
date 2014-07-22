@@ -30,6 +30,7 @@
 #include <Base/Tools2D.h>
 #include <Gui/Selection.h>
 #include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 #include <QCoreApplication>
 
 
@@ -124,17 +125,18 @@ public:
     //@{
     /// mode table
     enum SketchMode{
-        STATUS_NONE,              /**< enum value View provider is in neutral. */
-        STATUS_SELECT_Point,      /**< enum value a point was selected. */
-        STATUS_SELECT_Edge,       /**< enum value an edge was selected. */
-        STATUS_SELECT_Constraint, /**< enum value a constraint was selected. */
-        STATUS_SELECT_Cross,      /**< enum value the base coordinate system was selected. */
-        STATUS_SKETCH_DragPoint,  /**< enum value while dragging a point. */
-        STATUS_SKETCH_DragCurve,  /**< enum value while dragging a curve. */
-        STATUS_SKETCH_DragConstraint,  /**< enum value while dragging a compatible constraint. */
-        STATUS_SKETCH_UseHandler, /**< enum value a DrawSketchHandler is in control. */
-        STATUS_SKETCH_StartRubberBand, /**< enum value for initiating a rubber band selection */
-        STATUS_SKETCH_UseRubberBand /**< enum value when making a rubber band selection *//**< enum value a DrawSketchHandler is in control. */
+        STATUS_NONE,              		/**< enum value View provider is in neutral. */
+        STATUS_SELECT_Point,      		/**< enum value a point was selected. */
+        STATUS_SELECT_Edge,       		/**< enum value an edge was selected. */
+        STATUS_SELECT_Constraint, 		/**< enum value a constraint was selected. */
+        STATUS_SELECT_Cross,      		/**< enum value the base coordinate system was selected. */
+        STATUS_SKETCH_DragPoint,  		/**< enum value while dragging a point. */
+        STATUS_SKETCH_DragCurve,  		/**< enum value while dragging a curve. */
+        STATUS_SKETCH_DragConstraint,  	/**< enum value while dragging a compatible constraint. */
+        STATUS_SKETCH_UseHandler, 		/**< enum value a DrawSketchHandler is in control. */
+        STATUS_SKETCH_StartRubberBand, 	/**< enum value for initiating a rubber band selection */
+        STATUS_SKETCH_UseRubberBand 	/**< enum value when making a rubber band selection */
+        								/**< enum value a DrawSketchHandler is in control. */
     };
     /// is called by GuiCommands to set the drawing mode
     void setSketchMode(SketchMode mode) {Mode = mode;}
@@ -221,6 +223,16 @@ public:
     boost::signal<void ()> signalElementsChanged;
     
 
+    /// Experimental solver: signals if the sketch has been set up
+    boost::signal<void (QString msg)> signalSetUp_exp;
+    /// Experimental solver: signals if the sketch has been solved
+    boost::signal<void (QString msg)> signalSolved_exp;
+
+    /// signals if the sketch has been solved
+    boost::signals2::signal<void ( double solve_time, int solver, bool succeeded  )> signalSolveStatusUpdate;
+    /// signals if the sketch has been solved
+    boost::signals2::signal<void ( double solve_time, int solver, bool succeeded )> signalSolveStatusUpdate_exp;
+
 protected:
     virtual bool setEdit(int ModNum);
     virtual void unsetEdit(int ModNum);
@@ -229,6 +241,8 @@ protected:
     void deactivateHandler();
     /// set up and solve the sketch
     void solveSketch(void);
+    /// Experimental solver: set up and solve the sketch
+    void solveSketch_exp(void);
     /// helper to detect whether the picked point lies on the sketch
     bool isPointOnSketch(const SoPickedPoint *pp) const;
     /// get called by the container whenever a property has been changed
@@ -346,6 +360,11 @@ protected:
     static SbColor SelectColor;
     static SbColor PreselectSelectedColor;
 
+    // Experimental solver
+    static SbColor VertexColor_exp;
+    static SbColor CurveColor_exp;
+    //end Experimental solver
+
     static SbTime prvClickTime;
     static SbVec3f prvClickPoint;
     static SbVec2s prvCursorPos;
@@ -366,7 +385,7 @@ protected:
     int antiAliasing;
 };
 
-} // namespace PartGui
+} // namespace SketcherGui
 
 
 #endif // SKETCHERGUI_VIEWPROVIDERSKETCH_H

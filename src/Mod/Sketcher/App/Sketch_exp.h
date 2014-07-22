@@ -20,8 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef SKETCHER_SKETCH_H
-#define SKETCHER_SKETCH_H
+#ifndef SKETCHER_SKETCH_EXP_H
+#define SKETCHER_SKETCH_EXP_H
 
 #include <App/PropertyStandard.h>
 #include <App/PropertyFile.h>
@@ -29,20 +29,22 @@
 #include <Mod/Part/App/TopoShape.h>
 #include "Constraint.h"
 
-#include "freegcs/GCS.h"
+#include "freegcs_exp/GCS_exp.h"
 
 #include <Base/Persistence.h>
 
-namespace Sketcher
+using namespace Sketcher;
+
+namespace Sketcher_exp
 {
 
-class SketcherExport Sketch :public Base::Persistence
+class SketcherExport Sketch_exp :public Base::Persistence
 {
     TYPESYSTEM_HEADER();
 
 public:
-    Sketch();
-    ~Sketch();
+    Sketch_exp();
+    virtual ~Sketch_exp();
 
     // from base class
     virtual unsigned int getMemSize(void) const;
@@ -205,7 +207,7 @@ protected:
     };
 
     std::vector<GeoDef> Geoms;
-    GCS::System GCSsys;
+    GCS_EXP::System GCSsys;
     int ConstraintsCounter;
     std::vector<int> Conflicting;
     std::vector<int> Redundant;
@@ -214,10 +216,10 @@ protected:
     std::vector<double*> Parameters;    // with memory allocation
     std::vector<double*> FixParameters; // with memory allocation
     std::vector<double> MoveParameters, InitParameters;
-    std::vector<GCS::Point>  Points;
-    std::vector<GCS::Line>   Lines;
-    std::vector<GCS::Arc>    Arcs;
-    std::vector<GCS::Circle> Circles;
+    std::vector<GCS_EXP::Point>  Points;
+    std::vector<GCS_EXP::Line>   Lines;
+    std::vector<GCS_EXP::Arc>    Arcs;
+    std::vector<GCS_EXP::Circle> Circles;
 
     bool isInitMove;
     bool isFine;
@@ -230,7 +232,7 @@ private:
     int checkGeoId(int geoId);
 };
 
-} //namespace Part
+} //namespace Sketcher_exp
 
 
-#endif // SKETCHER_SKETCH_H
+#endif // SKETCHER_SKETCH_EXP_H

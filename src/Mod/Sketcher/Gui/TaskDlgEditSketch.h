@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2009 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2009 Jï¿½rgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -31,6 +31,7 @@
 #include "TaskSketcherElements.h"
 #include "TaskSketcherGeneral.h"
 #include "TaskSketcherMessages.h"
+#include "TaskSolverStatusHistory.h"
 
 namespace SketcherGui {
 
@@ -65,11 +66,12 @@ public:
     { return QDialogButtonBox::Close|QDialogButtonBox::Help; }
 
 protected:
-    ViewProviderSketch   *sketchView;
+    ViewProviderSketch   	*sketchView;
     TaskSketcherConstrains  *Constraints;
     TaskSketcherElements *Elements;
     TaskSketcherGeneral     *General;
     TaskSketcherMessages    *Messages;
+    TaskSolverStatusHistory *SolverHistory;
 };
 
 

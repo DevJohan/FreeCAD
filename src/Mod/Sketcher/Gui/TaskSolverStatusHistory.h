@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2009 J�rgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2011 J�rgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -21,71 +21,46 @@
  ***************************************************************************/
 
 
-#ifndef GUI_TASKVIEW_TaskSketcherConstrains_H
-#define GUI_TASKVIEW_TaskSketcherConstrains_H
+#ifndef GUI_TASKVIEW_TaskSolverStatusHistory_H
+#define GUI_TASKVIEW_TaskSolverStatusHistory_H
 
 #include <Gui/TaskView/TaskView.h>
 #include <Gui/Selection.h>
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
+
+class Ui_TaskSolverStatusHistory;
 
 namespace App {
 class Property;
 }
 
-namespace SketcherGui {
+namespace SketcherGui { 
 
 class ViewProviderSketch;
-class Ui_TaskSketcherConstrains;
 
-class ConstraintView : public QListWidget
+class TaskSolverStatusHistory : public Gui::TaskView::TaskBox
 {
     Q_OBJECT
 
 public:
-    explicit ConstraintView(QWidget *parent = 0);
-    ~ConstraintView();
+    TaskSolverStatusHistory(ViewProviderSketch *sketchView);
+    ~TaskSolverStatusHistory();
 
+    void solveStatusUpdate(		double solve_time, int solver, bool succeeded );
+    void solveStatusUpdate_exp(	double solve_time, int solver, bool succeeded );
+
+private Q_SLOTS:
+    
 protected:
-    void contextMenuEvent (QContextMenuEvent* event);
-
-protected Q_SLOTS:
-    void modifyCurrentItem();
-    void renameCurrentItem();
-    void deleteSelectedItems();
-};
-
-class TaskSketcherConstrains : public Gui::TaskView::TaskBox, public Gui::SelectionObserver
-{
-    Q_OBJECT
-
-public:
-    TaskSketcherConstrains(ViewProviderSketch *sketchView);
-    ~TaskSketcherConstrains();
-
-    /// Observer message from the Selection
-    void onSelectionChanged(const Gui::SelectionChanges& msg);
-
-private:
-    void slotConstraintsChanged(void);
-
-public Q_SLOTS:
-    void on_comboBoxFilter_currentIndexChanged(int);
-    void on_listWidgetConstraints_itemSelectionChanged(void); 
-    void on_listWidgetConstraints_itemActivated(QListWidgetItem *item);
-    void on_listWidgetConstraints_itemChanged(QListWidgetItem * item);
-
-protected:
-    void changeEvent(QEvent *e);
     ViewProviderSketch *sketchView;
-    typedef boost::BOOST_SIGNALS_NAMESPACE::connection Connection;
-    Connection connectionConstraintsChanged;
+    Connection connectionSolveStatusUpdate;
+    Connection connectionSolveStatusUpdate_exp;
 
 private:
     QWidget* proxy;
-    bool inEditMode;
-    Ui_TaskSketcherConstrains* ui;
+    Ui_TaskSolverStatusHistory* ui;
 };
 
 } //namespace SketcherGui
 
-#endif // GUI_TASKVIEW_TASKAPPERANCE_H
+#endif // GUI_TASKVIEW_TaskSolverStatusHistory_H

@@ -58,6 +58,20 @@
 
 using namespace SketcherGui;
 
+static const int unit_circle_segments = 36;
+static const float unit_circle[unit_circle_segments][2] = {
+		{ 1.0000000,  0.0000000}, { 0.9848078,  0.1736482}, { 0.9396926,  0.3420201},
+		{ 0.8660254,  0.5000000}, { 0.7660444,  0.6427876}, { 0.6427876,  0.7660444},
+		{ 0.5000000,  0.8660254}, { 0.3420201,  0.9396926}, { 0.1736482,  0.9848078},
+		{ 0.0000000,  1.0000000}, {-0.1736482,  0.9848078}, {-0.3420201,  0.9396926},
+		{-0.5000000,  0.8660254}, {-0.6427876,  0.7660444}, {-0.7660444,  0.6427876},
+		{-0.8660254,  0.5000000}, {-0.9396926,  0.3420201}, {-0.9848078,  0.1736482},
+		{-1.0000000,  0.0000000}, {-0.9848078, -0.1736482}, {-0.9396926, -0.3420201},
+		{-0.8660254, -0.5000000}, {-0.7660444, -0.6427876}, {-0.6427876, -0.7660444},
+		{-0.5000000, -0.8660254}, {-0.3420201, -0.9396926}, {-0.1736482, -0.9848078},
+		{-0.0000000, -1.0000000}, { 0.1736482, -0.9848078}, { 0.3420201, -0.9396926},
+		{ 0.5000000, -0.8660254}, { 0.6427876, -0.7660444}, { 0.7660444, -0.6427876},
+		{ 0.8660254, -0.5000000}, { 0.9396926, -0.3420201}, { 0.9848078, -0.1736482}};
 // ------------------------------------------------------
 
 SO_NODE_SOURCE(SoDatumLabel);
@@ -144,9 +158,9 @@ void SoDatumLabel::computeBBox(SoAction *action, SbBox3f &box, SbVec3f &center)
 {
     if (!this->bbox.isEmpty()) {
         // Set the bounding box using stored parameters
-        box.setBounds(this->bbox.getMin(),this->bbox.getMax() );
+        box.setBounds( this->bbox.getMin(), this->bbox.getMax() );
         SbVec3f bbcenter = this->bbox.getCenter();
-        center.setValue(bbcenter[0], bbcenter[1], bbcenter[2]);
+        center.setValue( bbcenter[0], bbcenter[1], bbcenter[2] );
     }
 }
 
@@ -163,8 +177,10 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
     SbVec3f p2 = pnts[1];
 
     // Change the offset and bounding box parameters depending on Datum Type
-    if(this->datumtype.getValue() == DISTANCE || this->datumtype.getValue() == DISTANCEX || this->datumtype.getValue() == DISTANCEY ){
-
+    if(		this->datumtype.getValue() == DISTANCE ||
+    		this->datumtype.getValue() == DISTANCEX ||
+    		this->datumtype.getValue() == DISTANCEY
+    ){
         float length = this->param1.getValue();
         float length2 = this->param2.getValue();
         SbVec3f dir, norm;
@@ -335,20 +351,21 @@ void SoDatumLabel::generatePrimitives(SoAction * action)
         this->endShape();
     } else if (this->datumtype.getValue() == SYMMETRIC) {
 
-        // Get the Scale. See GLRender function for details on the viewport width calculation
-        SoState *state = action->getState();
-        const SbViewVolume & vv = SoViewVolumeElement::get(state);
-        float scale = vv.getWorldToScreenScale(SbVec3f(0.f,0.f,0.f), 1.0f);
-	SbVec2s vp_size = static_cast<SoGLRenderAction*>(action)->getViewportRegion().getWindowSize();
-	scale /= float(vp_size[0]);
+    	// Get the Scale. See GLRender function for details on the viewport width calculation
+    	SoState *state = action->getState();
+    	const SbViewVolume & vv = SoViewVolumeElement::get(state);
+    	float scale = vv.getWorldToScreenScale(SbVec3f(0.f,0.f,0.f), 1.0f);
 
-        SbVec3f dir = (p2-p1);
-        dir.normalize();
-        SbVec3f norm (-dir[1],dir[0],0);
+    	SbVec2s vp_size = static_cast<SoGLRenderAction*>(action)->getViewportRegion().getWindowSize();
+    	scale /= float(vp_size[0]);
 
-        float margin = this->imgHeight / 4.0;
+    	SbVec3f dir = (p2-p1);
+    	dir.normalize();
+    	SbVec3f norm (-dir[1],dir[0],0);
 
-        // Calculate coordinates for the first arrow
+    	float margin = this->imgHeight / 4.0;
+
+    	// Calculate coordinates for the first arrow
         SbVec3f ar0, ar1, ar2;
         ar0  = p1 + dir * 5 * margin;
         ar1  = ar0 - dir * 0.866f * 2 * margin; // Base Point of Arrow
@@ -415,7 +432,7 @@ void SoDatumLabel::notify(SoNotList * l)
     inherited::notify(l);
 }
 
-void SoDatumLabel::GLRender(SoGLRenderAction * action)
+void SoDatumLabel::GLRender( SoGLRenderAction * action )
 {
     SoState *state = action->getState();
 
@@ -489,8 +506,10 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
     glLineWidth(2.f);
     glColor3f(t[0], t[1], t[2]);
 
-    if(this->datumtype.getValue() == DISTANCE || this->datumtype.getValue() == DISTANCEX || this->datumtype.getValue() == DISTANCEY )
-        {
+    if(		this->datumtype.getValue() == DISTANCE ||
+    		this->datumtype.getValue() == DISTANCEX ||
+    		this->datumtype.getValue() == DISTANCEY
+    ){
         float length = this->param1.getValue();
         float length2 = this->param2.getValue();
         const SbVec3f *pnts = this->pnts.getValues(0);
@@ -630,6 +649,18 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         //Store the bounding box
         this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
 
+        if( true /* drawBoundingBoxes */ ){
+            glLineWidth(this->lineWidth.getValue()/2);
+            glColor3f(.5, .5, .5);
+
+    		glBegin(GL_LINE_LOOP);
+    		glVertex2f(minX, minY);
+    		glVertex2f(minX, maxY);
+    		glVertex2f(maxX, maxY);
+    		glVertex2f(maxX, minY);
+    		glEnd();
+        }
+
     } else if (this->datumtype.getValue() == RADIUS) {
         // Get the Points
         SbVec3f p1 = pnts[0];
@@ -702,6 +733,19 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         }
         //Store the bounding box
         this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
+
+        if( true /* drawBoundingBoxes */ ){
+            glLineWidth(this->lineWidth.getValue()/2);
+            glColor3f(.5, .5, .5);
+
+    		glBegin(GL_LINE_LOOP);
+    		glVertex2f(minX, minY);
+    		glVertex2f(minX, maxY);
+    		glVertex2f(maxX, maxY);
+    		glVertex2f(maxX, minY);
+    		glEnd();
+        }
+
     } else if (this->datumtype.getValue() == ANGLE) {
         // Only the angle intersection point is needed
         SbVec3f p0 = pnts[0];
@@ -807,6 +851,19 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         }
         //Store the bounding box
         this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
+
+        if( true /* drawBoundingBoxes */ ){
+            glLineWidth(this->lineWidth.getValue()/2);
+            glColor3f(.5, .5, .5);
+
+    		glBegin(GL_LINE_LOOP);
+    		glVertex2f(minX, minY);
+    		glVertex2f(minX, maxY);
+    		glVertex2f(maxX, maxY);
+    		glVertex2f(maxX, minY);
+    		glEnd();
+        }
+
     } else if (this->datumtype.getValue() == SYMMETRIC) {
 
         SbVec3f p1 = pnts[0];
@@ -816,7 +873,7 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         dir.normalize();
         SbVec3f norm (-dir[1],dir[0],0);
 
-        float margin = this->imgHeight / 4.0;
+        float margin = 10 * scale;// this->imgHeight / 4.0;
 
         // Calculate coordinates for the first arrow
         SbVec3f ar0, ar1, ar2;
@@ -865,6 +922,51 @@ void SoDatumLabel::GLRender(SoGLRenderAction * action)
         }
         //Store the bounding box
         this->bbox.setBounds(SbVec3f(minX, minY, 0.f), SbVec3f (maxX, maxY, 0.f));
+
+        if( true /* drawBoundingBoxes */ ){
+            glLineWidth(this->lineWidth.getValue()/2);
+            glColor3f(.5, .5, .5);
+
+    		glBegin(GL_LINE_LOOP);
+    		glVertex2f(minX, minY);
+    		glVertex2f(minX, maxY);
+    		glVertex2f(maxX, maxY);
+    		glVertex2f(maxX, minY);
+    		glEnd();
+        }
+    } else if (this->datumtype.getValue() == COINCIDENT) {
+        // Only the angle intersection point is needed
+        SbVec3f p0 = pnts[0];
+
+        float r = 6*scale;
+
+        // Useful Information
+        // p0 - position of coincident
+        const int countSegments = unit_circle_segments;
+        // Draw
+        glBegin(GL_LINE_LOOP);
+        for ( int i = 0; i < countSegments; i++ ){
+        	glVertex2f(p0[0]+r*unit_circle[i][0],p0[1]+r*unit_circle[i][1]);
+        }
+        glEnd();
+
+
+    	// BOUNDING BOX CALCULATION - IMPORTANT
+        //Store the bounding box
+    	this->bbox.setBounds(p0 - SbVec3f (r, r, 0.f), p0 + SbVec3f (r, r, 0.f));
+
+    	float minX = p0[0]-r, minY = p0[1]-r, maxX = p0[0]+r , maxY = p0[1]+r;
+    	if( false /* drawBoundingBoxes */ ){
+    		glLineWidth(this->lineWidth.getValue()/2);
+    		glColor3f(.5, .5, .5);
+
+    		glBegin(GL_LINE_LOOP);
+    		glVertex2f(minX, minY);
+    		glVertex2f(minX, maxY);
+    		glVertex2f(maxX, maxY);
+    		glVertex2f(maxX, minY);
+    		glEnd();
+    	}
     }
 
     if (hasText) {

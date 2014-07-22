@@ -52,6 +52,8 @@ SET(Datatypes_SRCS
     Constraint.h
     Sketch.cpp
     Sketch.h
+    Sketch_exp.cpp
+    Sketch_exp.h
 )
 SOURCE_GROUP("Datatypes" FILES ${Datatypes_SRCS})
 
@@ -83,6 +85,20 @@ SET(FreeGCS_SRCS
 )
 SOURCE_GROUP("FreeGCS" FILES ${FreeGCS_SRCS})
 
+SET(FreeGCS_EXP_SRCS
+    freegcs_exp/GCS_exp.cpp
+    freegcs_exp/GCS_exp.h
+    freegcs_exp/Util_exp.h
+    freegcs_exp/Geo_exp.h
+    freegcs_exp/Constraints_exp.cpp
+    freegcs_exp/Constraints_exp.h
+    freegcs_exp/SubSystem_exp.cpp
+    freegcs_exp/SubSystem_exp.h
+    freegcs_exp/qp_eq_exp.cpp
+    freegcs_exp/qp_eq_exp.h
+)
+SOURCE_GROUP("FreeGCS_EXP" FILES ${FreeGCS_EXP_SRCS})
+
 SET(SketchModule_SRCS
     AppSketcher.cpp
     AppSketcherPy.cpp
@@ -94,6 +110,7 @@ SOURCE_GROUP("Module" FILES ${SketchModule_SRCS})
 SET(Sketcher_SRCS
     ${Features_SRCS}
     ${FreeGCS_SRCS}
+    ${FreeGCS_EXP_SRCS}
     ${SketchModule_SRCS}
     ${Python_SRCS}
     ${Properties_SRCS}
