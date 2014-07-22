@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2009 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2009 Jï¿½rgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -34,6 +34,8 @@
 #include <boost/signals.hpp>
 
 typedef boost::signals::connection Connection;
+
+#include "TaskSolverStatusHistory.h"
 
 namespace SketcherGui {
 
@@ -77,8 +79,10 @@ protected:
     TaskSketcherElements    *Elements;
     TaskSketcherGeneral     *General;
     TaskSketcherMessages    *Messages;
+
     Connection connectUndoDocument;
     Connection connectRedoDocument;
+    TaskSolverStatusHistory *SolverHistory;
 };
 
 

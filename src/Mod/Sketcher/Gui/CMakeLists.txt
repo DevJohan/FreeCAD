@@ -33,10 +33,12 @@ set(SketcherGui_MOC_HDRS
     TaskSketcherGeneral.h
     TaskSketcherMessages.h
     TaskSketcherValidation.h
+    TaskSolverStatusHistory.h
     TaskDlgEditSketch.h
     SketchOrientationDialog.h
     SketcherSettings.h
     PropertyConstraintListItem.h
+    SolverHistoryGraph.h
 )
 fc_wrap_cpp(SketcherGui_MOC_SRCS ${SketcherGui_MOC_HDRS})
 SOURCE_GROUP("Moc" FILES ${SketcherGui_MOC_SRCS})
@@ -49,6 +51,7 @@ set(SketcherGui_UIC_SRCS
     TaskSketcherGeneral.ui
     TaskSketcherMessages.ui
     TaskSketcherValidation.ui
+    TaskSolverStatusHistory.ui
     InsertDatum.ui
     SketchOrientationDialog.ui
     SketcherSettings.ui
@@ -74,6 +77,8 @@ SET(SketcherGui_SRCS
     SoDatumLabel.h
     PropertyConstraintListItem.h
     PropertyConstraintListItem.cpp
+    SolverHistoryGraph.cpp
+    SolverHistoryGraph.h
     TaskSketcherConstrains.ui
     TaskSketcherConstrains.cpp
     TaskSketcherConstrains.h
@@ -91,6 +96,9 @@ SET(SketcherGui_SRCS
     TaskSketcherValidation.ui
     TaskSketcherValidation.cpp
     TaskSketcherValidation.h
+    TaskSolverStatusHistory.ui
+    TaskSolverStatusHistory.cpp
+    TaskSolverStatusHistory.h
     ViewProviderSketch.cpp
     ViewProviderSketch.h
     DrawSketchHandler.cpp

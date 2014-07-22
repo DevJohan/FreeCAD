@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2008     *
+ *   Copyright (c) Jï¿½rgen Riegel          (juergen.riegel@web.de) 2008     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -41,7 +41,7 @@ class SketcherExport SketchObject : public Part::Part2DObject
 
 public:
     SketchObject();
-    ~SketchObject();
+    virtual ~SketchObject();
 
     /// Property
     Part    ::PropertyGeometryList   Geometry;

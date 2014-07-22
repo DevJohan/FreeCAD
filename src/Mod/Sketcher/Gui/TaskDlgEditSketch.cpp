@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2009 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2009 Jï¿½rgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -47,8 +47,11 @@ TaskDlgEditSketch::TaskDlgEditSketch(ViewProviderSketch *sketchView)
     Elements = new TaskSketcherElements(sketchView);
     General  = new TaskSketcherGeneral(sketchView);
     Messages  = new TaskSketcherMessages(sketchView);
-
+    SolverHistory = new TaskSolverStatusHistory(sketchView);
+    SolverHistory->hideGroupBox();
+    
     Content.push_back(Messages);
+    Content.push_back(SolverHistory);
     Content.push_back(General);
     Content.push_back(Constraints);
     Content.push_back(Elements);

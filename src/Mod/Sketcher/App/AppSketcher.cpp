@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2008 Jürgen Riegel (juergen.riegel@web.de)              *
+ *   Copyright (c) 2008 Jï¿½rgen Riegel (juergen.riegel@web.de)              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -37,6 +37,8 @@
 #include "SketchPy.h"
 #include "PropertyConstraintList.h"
 
+#include "Sketch_exp.h"
+
 
 extern struct PyMethodDef Sketcher_methods[];
 
@@ -73,6 +75,8 @@ void SketcherExport initSketcher()
     Sketcher::Sketch                ::init();
     Sketcher::Constraint            ::init();
     Sketcher::PropertyConstraintList::init();
+
+    Sketcher_exp::Sketch_exp        ::init();
 
     Base::Console().Log("Loading Sketcher module... done\n");
 

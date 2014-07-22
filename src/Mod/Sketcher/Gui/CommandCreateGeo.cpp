@@ -539,7 +539,8 @@ public:
       : Mode(STATUS_SEEK_First),SegmentMode(SEGMENT_MODE_Line),
         TransitionMode(TRANSITION_MODE_Free),suppressTransition(false),EditCurve(2),
         firstCurve(-1),previousCurve(-1),
-        firstPosId(Sketcher::none),previousPosId(Sketcher::none) {}
+        firstPosId(Sketcher::none),previousPosId(Sketcher::none),
+        startAngle(), endAngle(), arcRadius() {}
     virtual ~DrawSketchHandlerLineSet() {}
     /// mode table
     enum SELECT_MODE {
@@ -1072,8 +1073,11 @@ static const char *cursor_createarc[]={
 class DrawSketchHandlerArc : public DrawSketchHandler
 {
 public:
-    DrawSketchHandlerArc()
-      : Mode(STATUS_SEEK_First),EditCurve(2){}
+    DrawSketchHandlerArc():
+    	Mode(STATUS_SEEK_First),
+    	EditCurve(2),
+    	rx(), ry(),
+    	startAngle(), endAngle(), arcAngle() {}
     virtual ~DrawSketchHandlerArc(){}
     /// mode table
     enum SelectMode {
@@ -1310,8 +1314,11 @@ static const char *cursor_create3pointarc[]={
 class DrawSketchHandler3PointArc : public DrawSketchHandler
 {
 public:
-    DrawSketchHandler3PointArc()
-      : Mode(STATUS_SEEK_First),EditCurve(2){}
+    DrawSketchHandler3PointArc():
+    	Mode(STATUS_SEEK_First),
+        EditCurve(2),
+        radius(), startAngle(), endAngle(), arcAngle(),
+        arcPos1(), arcPos2() {}
     virtual ~DrawSketchHandler3PointArc(){}
     /// mode table
     enum SelectMode {
@@ -1839,8 +1846,9 @@ static const char *cursor_create3pointcircle[]={
 class DrawSketchHandler3PointCircle : public DrawSketchHandler
 {
 public:
-    DrawSketchHandler3PointCircle()
-      : Mode(STATUS_SEEK_First),EditCurve(2),N(32.0){}
+    DrawSketchHandler3PointCircle():
+    	Mode(STATUS_SEEK_First),
+        EditCurve(2),N(32.0),radius(){}
     virtual ~DrawSketchHandler3PointCircle(){}
     /// mode table
     enum SelectMode {
@@ -2359,7 +2367,9 @@ static const char *cursor_createfillet[]={
 class DrawSketchHandlerFillet: public DrawSketchHandler
 {
 public:
-    DrawSketchHandlerFillet() : Mode(STATUS_SEEK_First) {}
+    DrawSketchHandlerFillet() :
+    	Mode(STATUS_SEEK_First),
+        firstCurve() {}
     virtual ~DrawSketchHandlerFillet()
     {
         Gui::Selection().rmvSelectionGate();
@@ -2890,7 +2900,10 @@ static const char *cursor_creatslot[]={
 class DrawSketchHandlerSlot: public DrawSketchHandler
 {
 public:
-    DrawSketchHandlerSlot():Mode(STATUS_SEEK_First),EditCurve(36){}
+    DrawSketchHandlerSlot():
+    	Mode(STATUS_SEEK_First),
+    	EditCurve(36),
+    	lx(),ly(),r(),a(),rev(){}
     virtual ~DrawSketchHandlerSlot(){}
     /// mode table
     enum BoxMode {

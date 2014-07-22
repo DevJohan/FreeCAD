@@ -48,12 +48,13 @@ class SketcherGuiExport SoDatumLabel : public SoShape {
 public:
   enum Type
   {
-  ANGLE,
-  DISTANCE,
-  DISTANCEX,
-  DISTANCEY,
-  RADIUS,
-  SYMMETRIC
+	  ANGLE,
+	  DISTANCE,
+	  DISTANCEX,
+	  DISTANCEY,
+	  RADIUS,
+	  SYMMETRIC,
+	  COINCIDENT
   };
 
     static void initClass();
