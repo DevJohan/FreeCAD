@@ -49,7 +49,6 @@ protected:
 
 
 
-
 SketcherGuiExport void addSketcherWorkbenchConstraints( Gui::MenuItem& cons );
 SketcherGuiExport void addSketcherWorkbenchSketchActions( Gui::MenuItem& sketch );
 SketcherGuiExport void addSketcherWorkbenchGeometries( Gui::MenuItem& geom );

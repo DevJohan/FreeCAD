@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2008 Jürgen Riegel (juergen.riegel@web.de)              *
+ *   Copyright (c) 2008 Jï¿½rgen Riegel (juergen.riegel@web.de)              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -85,7 +85,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
 
 Gui::ToolBarItem* Workbench::setupToolBars() const
 {
-    Gui::ToolBarItem* root = StdWorkbench::setupToolBars();
+	Gui::ToolBarItem* root = StdWorkbench::setupToolBars();
 
     Gui::ToolBarItem* part = new Gui::ToolBarItem(root);
     part->setCommand("Sketcher");

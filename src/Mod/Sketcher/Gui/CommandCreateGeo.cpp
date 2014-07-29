@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2010 Jürgen Riegel (juergen.riegel@web.de)              *
+ *   Copyright (c) 2010 Jï¿½rgen Riegel (juergen.riegel@web.de)              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -3097,7 +3097,6 @@ bool CmdSketcherCreateSlot::isActive(void)
     return isCreateGeoActive(getActiveGuiDocument());
 }
 
-
 /* Create Regular Polygon ==============================================*/
 
 /* XPM */
@@ -3300,7 +3299,6 @@ protected:
     std::vector<AutoConstraint> sugConstr1, sugConstr2;
 };
 
-
 DEF_STD_CMD_A(CmdSketcherCreateTriangle);
 CmdSketcherCreateTriangle::CmdSketcherCreateTriangle()
   : Command("Sketcher_CreateTriangle")
@@ -3378,6 +3376,7 @@ bool CmdSketcherCreatePentagon::isActive(void)
 
 
 DEF_STD_CMD_A(CmdSketcherCreateHexagon);
+
 CmdSketcherCreateHexagon::CmdSketcherCreateHexagon()
   : Command("Sketcher_CreateHexagon")
 {
