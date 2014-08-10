@@ -68,8 +68,10 @@ public:
       * a fully constrained or under-constrained sketch may contain conflicting
       * constraints or may not
       */
-    int setUpSketch(const std::vector<Part::Geometry *> &GeoList, const std::vector<Constraint *> &ConstraintList,
-                    int extGeoCount=0);
+    int setUpSketch(
+    		const std::vector<Part::Geometry *> &GeoList,
+    		const std::vector<Constraint *> &ConstraintList,
+    		int extGeoCount=0 );
     /// return the actual geometry of the sketch a TopoShape
     Part::TopoShape toShape(void) const;
     /// add unspecified geometry
@@ -182,11 +184,13 @@ public:
 
     enum GeoType {
         None    = 0,
-        Point   = 1, // 1 Point(start), 2 Parameters(x,y)
-        Line    = 2, // 2 Points(start,end), 4 Parameters(x1,y1,x2,y2)
-        Arc     = 3, // 3 Points(start,end,mid), (4)+5 Parameters((x1,y1,x2,y2),x,y,r,a1,a2)
-        Circle  = 4, // 1 Point(mid), 3 Parameters(x,y,r)
-        Ellipse = 5
+        Point   = 1, // 1 Point(start), 2 DependentVariables(x,y)
+        Line    = 2, // 2 Points(start,end), 4 DependentVariables(x1,y1,x2,y2)
+        Arc     = 3, // 3 Points(start,end,mid), (4)+5 DependentVariables((x1,y1,x2,y2),x,y,r,a1,a2)
+        Circle  = 4, // 1 Point(mid), 3 DependentVariables(x,y,r)
+        Ellipse = 5, //TODO: How to parameterize
+        CubeBezierCurve,  // 3 Points(start,end,control_point), 6 DependentVariables(x1,y1,x2,y2,x3,y3)
+        QuadBezierCurve  // 4 Points(start,end,control_point1,control_point2), 8 DependentVariables(x1,y1,x2,y2,x3,y3,x4,y4)
     };
 
     float SolveTime;
@@ -213,8 +217,8 @@ protected:
     std::vector<int> Redundant;
 
     // solving parameters
-    std::vector<double*> Parameters;    // with memory allocation
-    std::vector<double*> FixParameters; // with memory allocation
+    std::vector<double*> DependentVariables;    // with memory allocation
+    std::vector<double*> FixedVariables; // with memory allocation
     std::vector<double> MoveParameters, InitParameters;
     std::vector<GCS_EXP::Point>  Points;
     std::vector<GCS_EXP::Line>   Lines;

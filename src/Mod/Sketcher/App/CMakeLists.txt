@@ -92,6 +92,8 @@ SET(FreeGCS_EXP_SRCS
     freegcs_exp/Geo_exp.h
     freegcs_exp/Constraints_exp.cpp
     freegcs_exp/Constraints_exp.h
+    freegcs_exp/ConstraintsInfo_exp.cpp
+    freegcs_exp/ConstraintsInfo_exp.h
     freegcs_exp/SubSystem_exp.cpp
     freegcs_exp/SubSystem_exp.h
     freegcs_exp/qp_eq_exp.cpp

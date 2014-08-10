@@ -28,59 +28,144 @@
 
 #include <Eigen/Core>
 #include "Constraints_exp.h"
+#include "ConstraintsInfo_exp.h"
 
 namespace GCS_EXP
 {
 
+enum SolveStatus {
+    Success = 0,   // Found a solution zeroing the error function
+    Converged = 1, // Found a solution minimizing the error function
+    Failed = 2     // Failed to find any solution
+};
+
+enum Algorithm {
+    BFGS = 0,
+    LevenbergMarquardt = 1,
+    DogLeg = 2
+};
+
+
     class SubSystem
     {
     private:
-        int psize, csize;
-        std::vector<Constraint *> clist;
-        VEC_pD plist;      // pointers to the original parameters
-        MAP_pD_pD pmap;    // redirection map from the original parameters to pvals
-        VEC_D pvals;       // current variables vector (psize)
-//        JacobianMatrix jacobi;  // jacobi matrix of the residuals
-        std::map<Constraint *,VEC_pD > c2p; // constraint to parameter adjacency list
-        std::map<double *,std::vector<Constraint *> > p2c; // parameter to constraint adjacency list
-        void initialize(VEC_pD &params, MAP_pD_pD &reductionmap); // called by the constructors
+        int dependent_variable_count;
+        int priority_constraints_count;
+        // current variables vector
+    	std::vector<double> variables;
+    	// map of the external variables to local variables
+        std::map< double*, variable_index_type > parameter_indices;
+        std::vector<Constraint *> constraints_list;
+        // variable to constraints adjacency list
+        std::map< variable_index_type, std::vector<Constraint *> > p2c;
+        // reference values of the variables vector
+        std::vector<double> reference_values;
+
+        // Diagnose system
+        int dofs;
+        bool hasDiagnosis;
+//        bool hasUnknowns;
+        std::set<Constraint*> redundant;
+        std::vector<index_type> conflictingTags, redundantTags;
+
+        void initialize();
+
+        variable_index_type getIndex( double* param ){
+        	typedef std::map< double*, variable_index_type > map_type;
+        	map_type::iterator param_it =
+        			parameter_indices.find( param );
+        	if( param_it != parameter_indices.end())
+        		return param_it->second;
+
+        	parameter_indices.insert( map_type::value_type( param, variables.size() ));
+        	variables.push_back( *param );
+        	return parameter_indices[ param ];
+        }
+
+        double& getDependentVariable( variable_index_type i ){
+        	assert( i < dependent_variable_count );
+        	return variables[ i ];
+        }
+
+        void addDependentVariables( const std::vector< double* >& dependent_vars );
+        void addConstraints( const std::vector<ConstraintInfo *> &clist_ );
+
+        int solve_BFGS( bool isFine);
+        int solve_LM();
+        int solve_DL();
+
     public:
-        SubSystem(std::vector<Constraint *> &clist_, VEC_pD &params);
-        SubSystem(std::vector<Constraint *> &clist_, VEC_pD &params,
-                  MAP_pD_pD &reductionmap);
+        SubSystem( const std::vector<ConstraintInfo *>& clist_, const std::vector<double*>& dependent_variables );
+        SubSystem( const std::vector<Constraint *>& clist_ , const std::vector<variable_index_type>& dep_var );
         ~SubSystem();
 
-        int pSize() { return psize; };
-        int cSize() { return csize; };
+//        void redirectParams();
+//        void revertParams();
 
-        void redirectParams();
-        void revertParams();
+        void setReference();
+        void resetToReference();
 
-        void getParamMap(MAP_pD_pD &pmapOut);
-        void getParamList(VEC_pD &plistOut);
+        void rescaleConstraint(int id, double coeff)/*{
+        if ( id >= constraints_list.size() || id < 0 )
+            return;
+        SubSystem* constraint_subsys = getSubsystem(id);
+        if ( constraint_subsys )
+        	constraint_subsys->rescaleConstraint(id,coeff);
+        	}*/;
 
-        void getParams(VEC_pD &params, Eigen::VectorXd &xOut);
+        const std::vector<double>& getVariables() const { return variables; }
+        int getDependentVariableCount() const { return dependent_variable_count; }
+        std::vector<variable_index_type> getIndices(
+        		const std::vector<double*>& original_variables);
+
+//        void getParamMap(MAP_pD_pD &pmapOut);
+//        void getParamList(std::vector<double *> &plistOut);
+
         void getParams(Eigen::VectorXd &xOut);
-        void setParams(VEC_pD &params, Eigen::VectorXd &xIn);
         void setParams(Eigen::VectorXd &xIn);
 
         double error();
         void calcResidual(Eigen::VectorXd &r);
         void calcResidual(Eigen::VectorXd &r, double &err);
-        void calcJacobi(VEC_pD &params, Eigen::MatrixXd &jacobi);
         void calcJacobi(Eigen::MatrixXd &jacobi);
-        void calcGrad(VEC_pD &params, Eigen::VectorXd &grad);
-        void calcGrad(Eigen::VectorXd &grad);
+        void calcGrad( Eigen::VectorXd& grad );
+        double maxStep( Eigen::VectorXd &xdir);
 
-        double maxStep(VEC_pD &params, Eigen::VectorXd &xdir);
-        double maxStep(Eigen::VectorXd &xdir);
+        // For priority constraints of the system ( tag >= 0 )
+        double errorPriority();
+        void calcResidualPriority(Eigen::VectorXd &r);
+        void calcJacobiPriority(Eigen::MatrixXd &jacobi);
+        void calcGradPriority( Eigen::VectorXd& grad );
+        double maxStepPriority( Eigen::VectorXd &xdir);
+
+        // For auxiliary constraints of the system ( tag < 0 )
+        double errorAuxiliary();
+        void calcResidualAuxiliary(Eigen::VectorXd &r);
+        void calcJacobiAuxiliary(Eigen::MatrixXd &jacobi);
+        void calcGradAuxiliary( Eigen::VectorXd& grad );
+        double maxStepAuxiliary( Eigen::VectorXd &xdir);
 
         void applySolution();
         void analyse(Eigen::MatrixXd &J, Eigen::MatrixXd &ker, Eigen::MatrixXd &img);
         void report();
+        int diagnose();
 
-void printResidual();
+        int solve(bool isFine=true, Algorithm alg=DogLeg);
+
+        void printResidual();
     };
+
+    ///////////////////////////////////////
+    // BFGS Solver parameters
+    ///////////////////////////////////////
+	#define XconvergenceRough 1e-8
+	#define XconvergenceFine  1e-10
+	#define smallF            1e-20
+	#define MaxIterations     100 //Note that the total number of iterations allowed is MaxIterations *xLength
+//    static const double XconvergenceRough = 1e-8;
+//    static const double XconvergenceFine  = 1e-10;
+//    static const double smallF            = 1e-20;
+//    static const size_t MaxIterations     = 100; //Note that the total number of iterations allowed is MaxIterations *xLength
 
     double lineSearch(SubSystem *subsys, Eigen::VectorXd &xdir);
 

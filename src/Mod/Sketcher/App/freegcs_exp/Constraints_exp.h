@@ -49,261 +49,513 @@ namespace GCS_EXP
         TangentCircumf = 12
     };
 
+
+
+
+
     class Constraint
     {
     protected:
-        VEC_pD origpvec; // is used only as a reference for redirecting and reverting pvec
-        VEC_pD pvec;
+    	const std::vector<double>& variables;
+    	std::vector<index_type> paramenters_indices;
+        variable_index_type dependent_variable_count;
         double scale;
         int tag;
+
+        template <int i> index_type index() const { return paramenters_indices[i]; }
+        template <int i> double value() const { return variables[index<i>()]; }
+        template <int i> bool is_dependent() const { return index<i>() < dependent_variable_count; }
     public:
-        Constraint();
+        Constraint(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count );
         virtual ~Constraint(){}
 
-        inline VEC_pD params() { return pvec; }
+        inline const std::vector<index_type>& params() const { return paramenters_indices; }
 
-        void redirectParams(MAP_pD_pD redirectionmap);
-        void revertParams();
         void setTag(int tagId) { tag = tagId; }
-        int getTag() { return tag; }
+        int getTag() const { return tag; }
 
-        virtual ConstraintType getTypeId();
+
+        virtual ConstraintType getTypeId() const = 0;
+        virtual Constraint* clone() const  = 0;
         virtual void rescale(double coef=1.);
-        virtual double error();
-        virtual double grad(double *);
+        virtual double error() = 0;
+        virtual double grad(index_type) = 0;
         // virtual void grad(MAP_pD_D &deriv);  --> TODO: vectorized grad version
-        virtual double maxStep(MAP_pD_D &dir, double lim=1.);
+        virtual double maxStep(const std::vector<double>& dir, double lim=1.);
     };
 
     // Equal
     class ConstraintEqual : public Constraint
     {
     private:
-        inline double* param1() { return pvec[0]; }
-        inline double* param2() { return pvec[1]; }
+    	enum Variables{ param1, param2, variable_count };
+//        inline index_type param1_i() const { return paramenters_indices[0]; }
+//        inline index_type param2_i() const { return paramenters_indices[1]; }
+//
+//        inline double value_param1() const { return variables[param1_i()]; }
+//        inline double value_param2() const { return variables[param2_i()]; }
+//
+//        inline bool param1_dependent() const { return is_dependent<param1>(); }
+//        inline bool param2_dependent() const { return is_dependent<param2>(); }
     public:
-        ConstraintEqual(double *p1, double *p2);
-        virtual ConstraintType getTypeId();
+        ConstraintEqual(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef  );
+        virtual ConstraintType getTypeId() const;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // Difference
     class ConstraintDifference : public Constraint
     {
     private:
-        inline double* param1() { return pvec[0]; }
-        inline double* param2() { return pvec[1]; }
-        inline double* difference() { return pvec[2]; }
+    	enum Variables{ param1, param2, difference, variable_count };
+//        inline index_type param1_i() const { return paramenters_indices[0]; }
+//        inline index_type param2_i() const { return paramenters_indices[1]; }
+//        inline index_type difference_i() const { return paramenters_indices[2]; }
+//
+//        inline double value_param1() const { return variables[param1_i()]; }
+//        inline double value_param2() const { return variables[param2_i()]; }
+//        inline double value_difference() const { return variables[difference_i()]; }
+//
+//        inline bool param1_dependent() const { return isDependentVariable( param1_i() ); }
+//        inline bool param2_dependent() const { return isDependentVariable( param2_i() ); }
+//        inline bool difference_dependent() const { return isDependentVariable( difference_i() ); }
     public:
-        ConstraintDifference(double *p1, double *p2, double *d);
-        virtual ConstraintType getTypeId();
+        ConstraintDifference(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // P2PDistance
     class ConstraintP2PDistance : public Constraint
     {
     private:
-        inline double* p1x() { return pvec[0]; }
-        inline double* p1y() { return pvec[1]; }
-        inline double* p2x() { return pvec[2]; }
-        inline double* p2y() { return pvec[3]; }
-        inline double* distance() { return pvec[4]; }
+    	enum Variables{ p1x, p1y, p2x, p2y, distance, variable_count };
+//        inline index_type p1x_i() const   { return paramenters_indices[0]; }
+//        inline index_type p1y_i() const   { return paramenters_indices[1]; }
+//        inline index_type p2x_i() const   { return paramenters_indices[2]; }
+//        inline index_type p2y_i() const   { return paramenters_indices[3]; }
+//        inline index_type distance_i() const { return paramenters_indices[4]; }
+//
+//        inline double value_p1x() const   { return variables[p1x_i()]; }
+//        inline double value_p1y() const   { return variables[p1y_i()]; }
+//        inline double value_p2x() const   { return variables[p2x_i()]; }
+//        inline double value_p2y() const   { return variables[p2y_i()]; }
+//        inline double value_distance() const { return variables[distance_i()]; }
+//
+//        inline bool p1x_dependent() const { return isDependentVariable( p1x_i() ); }
+//        inline bool p1y_dependent() const { return isDependentVariable( p1y_i() ); }
+//        inline bool p2x_dependent() const { return isDependentVariable( p2x_i() ); }
+//        inline bool p2y_dependent() const { return isDependentVariable( p2y_i() ); }
+//        inline bool distance_dependent() const { return isDependentVariable( distance_i() ); }
     public:
-        ConstraintP2PDistance(Point &p1, Point &p2, double *d);
-        virtual ConstraintType getTypeId();
+        ConstraintP2PDistance(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
-        virtual double maxStep(MAP_pD_D &dir, double lim=1.);
+        virtual double grad(index_type);
+        virtual double maxStep( const std::vector<double>& dir, double lim=1.);
     };
 
     // P2PAngle
     class ConstraintP2PAngle : public Constraint
     {
     private:
-        inline double* p1x() { return pvec[0]; }
-        inline double* p1y() { return pvec[1]; }
-        inline double* p2x() { return pvec[2]; }
-        inline double* p2y() { return pvec[3]; }
-        inline double* angle() { return pvec[4]; }
+    	enum Variables{ p1x, p1y, p2x, p2y, angle, variable_count };
+//        inline index_type p1x_i() const   { return paramenters_indices[0]; }
+//        inline index_type p1y_i() const   { return paramenters_indices[1]; }
+//        inline index_type p2x_i() const   { return paramenters_indices[2]; }
+//        inline index_type p2y_i() const   { return paramenters_indices[3]; }
+//        inline index_type angle_i() const { return paramenters_indices[4]; }
+//
+//        inline double value_p1x() const   { return variables[p1x_i()]; }
+//        inline double value_p1y() const   { return variables[p1y_i()]; }
+//        inline double value_p2x() const   { return variables[p2x_i()]; }
+//        inline double value_p2y() const   { return variables[p2y_i()]; }
+//        inline double value_angle() const { return variables[angle_i()]; }
+//
+//        inline bool p1x_dependent() const { return isDependentVariable( p1x_i() ); }
+//        inline bool p1y_dependent() const { return isDependentVariable( p1y_i() ); }
+//        inline bool p2x_dependent() const { return isDependentVariable( p2x_i() ); }
+//        inline bool p2y_dependent() const { return isDependentVariable( p2y_i() ); }
+//        inline bool angle_dependent() const { return isDependentVariable( angle_i() ); }
+
         double da;
     public:
-        ConstraintP2PAngle(Point &p1, Point &p2, double *a, double da_=0.);
-        virtual ConstraintType getTypeId();
+        ConstraintP2PAngle(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef,
+        		double da_/*=0.*/);
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
-        virtual double maxStep(MAP_pD_D &dir, double lim=1.);
+        virtual double grad(index_type);
+        virtual double maxStep(const std::vector<double>& dir, double lim=1.);
     };
 
     // P2LDistance
     class ConstraintP2LDistance : public Constraint
     {
     private:
-        inline double* p0x() { return pvec[0]; }
-        inline double* p0y() { return pvec[1]; }
-        inline double* p1x() { return pvec[2]; }
-        inline double* p1y() { return pvec[3]; }
-        inline double* p2x() { return pvec[4]; }
-        inline double* p2y() { return pvec[5]; }
-        inline double* distance() { return pvec[6]; }
+    	enum Variables{ px, py, l_p1x, l_p1y, l_p2x, l_p2y, distance, variable_count };
+//        inline index_type p0x_i() const { return paramenters_indices[0]; }
+//        inline index_type p0y_i() const { return paramenters_indices[1]; }
+//        inline index_type p1x_i() const { return paramenters_indices[2]; }
+//        inline index_type p1y_i() const { return paramenters_indices[3]; }
+//        inline index_type p2x_i() const { return paramenters_indices[4]; }
+//        inline index_type p2y_i() const { return paramenters_indices[5]; }
+//        inline index_type distance_i() const { return paramenters_indices[6]; }
+//
+//        inline double value_p0x() const { return variables[p0x_i()]; }
+//        inline double value_p0y() const { return variables[p0y_i()]; }
+//        inline double value_p1x() const { return variables[p1x_i()]; }
+//        inline double value_p1y() const { return variables[p1y_i()]; }
+//        inline double value_p2x() const { return variables[p2x_i()]; }
+//        inline double value_p2y() const { return variables[p2y_i()]; }
+//        inline double value_distance() const { return variables[distance_i()]; }
+//
+//        inline bool p0x_dependent() const { return isDependentVariable( p0x_i() ); }
+//        inline bool p0y_dependent() const { return isDependentVariable( p0y_i() ); }
+//        inline bool p1x_dependent() const { return isDependentVariable( p1x_i() ); }
+//        inline bool p1y_dependent() const { return isDependentVariable( p1y_i() ); }
+//        inline bool p2x_dependent() const { return isDependentVariable( p2x_i() ); }
+//        inline bool p2y_dependent() const { return isDependentVariable( p2y_i() ); }
+//        inline bool distance_dependent() const { return isDependentVariable( distance_i() ); }
     public:
-        ConstraintP2LDistance(Point &p, Line &l, double *d);
-        virtual ConstraintType getTypeId();
+        ConstraintP2LDistance(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
-        virtual double maxStep(MAP_pD_D &dir, double lim=1.);
+        virtual double grad(index_type);
+        virtual double maxStep(const std::vector<double>& dir, double lim=1.);
     };
 
     // PointOnLine
     class ConstraintPointOnLine : public Constraint
     {
     private:
-        inline double* p0x() { return pvec[0]; }
-        inline double* p0y() { return pvec[1]; }
-        inline double* p1x() { return pvec[2]; }
-        inline double* p1y() { return pvec[3]; }
-        inline double* p2x() { return pvec[4]; }
-        inline double* p2y() { return pvec[5]; }
+    	enum Variables{ px, py, l_p1x, l_p1y, l_p2x, l_p2y, variable_count };
+//        inline index_type p0x_i() const { return paramenters_indices[0]; }
+//        inline index_type p0y_i() const { return paramenters_indices[1]; }
+//        inline index_type p1x_i() const { return paramenters_indices[2]; }
+//        inline index_type p1y_i() const { return paramenters_indices[3]; }
+//        inline index_type p2x_i() const { return paramenters_indices[4]; }
+//        inline index_type p2y_i() const { return paramenters_indices[5]; }
+//
+//        inline double value_p0x() const { return variables[p0x_i()]; }
+//        inline double value_p0y() const { return variables[p0y_i()]; }
+//        inline double value_p1x() const { return variables[p1x_i()]; }
+//        inline double value_p1y() const { return variables[p1y_i()]; }
+//        inline double value_p2x() const { return variables[p2x_i()]; }
+//        inline double value_p2y() const { return variables[p2y_i()]; }
+//
+//        inline bool p0x_dependent() const { return isDependentVariable( p0x_i() ); }
+//        inline bool p0y_dependent() const { return isDependentVariable( p0y_i() ); }
+//        inline bool p1x_dependent() const { return isDependentVariable( p1x_i() ); }
+//        inline bool p1y_dependent() const { return isDependentVariable( p1y_i() ); }
+//        inline bool p2x_dependent() const { return isDependentVariable( p2x_i() ); }
+//        inline bool p2y_dependent() const { return isDependentVariable( p2y_i() ); }
     public:
-        ConstraintPointOnLine(Point &p, Line &l);
-        ConstraintPointOnLine(Point &p, Point &lp1, Point &lp2);
-        virtual ConstraintType getTypeId();
+        ConstraintPointOnLine(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // PointOnPerpBisector
     class ConstraintPointOnPerpBisector : public Constraint
     {
     private:
-        inline double* p0x() { return pvec[0]; }
-        inline double* p0y() { return pvec[1]; }
-        inline double* p1x() { return pvec[2]; }
-        inline double* p1y() { return pvec[3]; }
-        inline double* p2x() { return pvec[4]; }
-        inline double* p2y() { return pvec[5]; }
+    	enum Variables{ p0x, p0y, p1x, p1y, p2x, p2y, variable_count };
+//        inline index_type p0x_i() const { return paramenters_indices[0]; }
+//        inline index_type p0y_i() const { return paramenters_indices[1]; }
+//        inline index_type p1x_i() const { return paramenters_indices[2]; }
+//        inline index_type p1y_i() const { return paramenters_indices[3]; }
+//        inline index_type p2x_i() const { return paramenters_indices[4]; }
+//        inline index_type p2y_i() const { return paramenters_indices[5]; }
+//
+//        inline double value_p0x() const { return variables[p0x_i()]; }
+//        inline double value_p0y() const { return variables[p0y_i()]; }
+//        inline double value_p1x() const { return variables[p1x_i()]; }
+//        inline double value_p1y() const { return variables[p1y_i()]; }
+//        inline double value_p2x() const { return variables[p2x_i()]; }
+//        inline double value_p2y() const { return variables[p2y_i()]; }
+//
+//        inline bool p0x_dependent() const { return isDependentVariable( p0x_i() ); }
+//        inline bool p0y_dependent() const { return isDependentVariable( p0y_i() ); }
+//        inline bool p1x_dependent() const { return isDependentVariable( p1x_i() ); }
+//        inline bool p1y_dependent() const { return isDependentVariable( p1y_i() ); }
+//        inline bool p2x_dependent() const { return isDependentVariable( p2x_i() ); }
+//        inline bool p2y_dependent() const { return isDependentVariable( p2y_i() ); }
     public:
-        ConstraintPointOnPerpBisector(Point &p, Line &l);
-        ConstraintPointOnPerpBisector(Point &p, Point &lp1, Point &lp2);
-        virtual ConstraintType getTypeId();
+        ConstraintPointOnPerpBisector(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // Parallel
     class ConstraintParallel : public Constraint
     {
     private:
-        inline double* l1p1x() { return pvec[0]; }
-        inline double* l1p1y() { return pvec[1]; }
-        inline double* l1p2x() { return pvec[2]; }
-        inline double* l1p2y() { return pvec[3]; }
-        inline double* l2p1x() { return pvec[4]; }
-        inline double* l2p1y() { return pvec[5]; }
-        inline double* l2p2x() { return pvec[6]; }
-        inline double* l2p2y() { return pvec[7]; }
+    	enum Variables{ l1p1x, l1p1y, l1p2x, l1p2y, l2p1x, l2p1y, l2p2x, l2p2y, variable_count };
+//        inline index_type l1p1x_i() const { return paramenters_indices[0]; }
+//        inline index_type l1p1y_i() const { return paramenters_indices[1]; }
+//        inline index_type l1p2x_i() const { return paramenters_indices[2]; }
+//        inline index_type l1p2y_i() const { return paramenters_indices[3]; }
+//        inline index_type l2p1x_i() const { return paramenters_indices[4]; }
+//        inline index_type l2p1y_i() const { return paramenters_indices[5]; }
+//        inline index_type l2p2x_i() const { return paramenters_indices[6]; }
+//        inline index_type l2p2y_i() const { return paramenters_indices[7]; }
+//
+//        inline double value_l1p1x() const { return variables[l1p1x_i()]; }
+//        inline double value_l1p1y() const { return variables[l1p1y_i()]; }
+//        inline double value_l1p2x() const { return variables[l1p2x_i()]; }
+//        inline double value_l1p2y() const { return variables[l1p2y_i()]; }
+//        inline double value_l2p1x() const { return variables[l2p1x_i()]; }
+//        inline double value_l2p1y() const { return variables[l2p1y_i()]; }
+//        inline double value_l2p2x() const { return variables[l2p2x_i()]; }
+//        inline double value_l2p2y() const { return variables[l2p2y_i()]; }
+//
+//        inline bool l1p1x_dependent() const { return isDependentVariable( l1p1x_i() ); }
+//        inline bool l1p1y_dependent() const { return isDependentVariable( l1p1y_i() ); }
+//        inline bool l1p2x_dependent() const { return isDependentVariable( l1p2x_i() ); }
+//        inline bool l1p2y_dependent() const { return isDependentVariable( l1p2y_i() ); }
+//        inline bool l2p1x_dependent() const { return isDependentVariable( l2p1x_i() ); }
+//        inline bool l2p1y_dependent() const { return isDependentVariable( l2p1y_i() ); }
+//        inline bool l2p2x_dependent() const { return isDependentVariable( l2p2x_i() ); }
+//        inline bool l2p2y_dependent() const { return isDependentVariable( l2p2y_i() ); }
     public:
-        ConstraintParallel(Line &l1, Line &l2);
-        virtual ConstraintType getTypeId();
+        ConstraintParallel(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // Perpendicular
     class ConstraintPerpendicular : public Constraint
     {
     private:
-        inline double* l1p1x() { return pvec[0]; }
-        inline double* l1p1y() { return pvec[1]; }
-        inline double* l1p2x() { return pvec[2]; }
-        inline double* l1p2y() { return pvec[3]; }
-        inline double* l2p1x() { return pvec[4]; }
-        inline double* l2p1y() { return pvec[5]; }
-        inline double* l2p2x() { return pvec[6]; }
-        inline double* l2p2y() { return pvec[7]; }
+    	enum Variables{ l1p1x, l1p1y, l1p2x, l1p2y, l2p1x, l2p1y, l2p2x, l2p2y, variable_count };
+//        inline index_type l1p1x_i() const { return paramenters_indices[0]; }
+//        inline index_type l1p1y_i() const { return paramenters_indices[1]; }
+//        inline index_type l1p2x_i() const { return paramenters_indices[2]; }
+//        inline index_type l1p2y_i() const { return paramenters_indices[3]; }
+//        inline index_type l2p1x_i() const { return paramenters_indices[4]; }
+//        inline index_type l2p1y_i() const { return paramenters_indices[5]; }
+//        inline index_type l2p2x_i() const { return paramenters_indices[6]; }
+//        inline index_type l2p2y_i() const { return paramenters_indices[7]; }
+//
+//        inline double value_l1p1x() const { return variables[l1p1x_i()]; }
+//        inline double value_l1p1y() const { return variables[l1p1y_i()]; }
+//        inline double value_l1p2x() const { return variables[l1p2x_i()]; }
+//        inline double value_l1p2y() const { return variables[l1p2y_i()]; }
+//        inline double value_l2p1x() const { return variables[l2p1x_i()]; }
+//        inline double value_l2p1y() const { return variables[l2p1y_i()]; }
+//        inline double value_l2p2x() const { return variables[l2p2x_i()]; }
+//        inline double value_l2p2y() const { return variables[l2p2y_i()]; }
+//
+//        inline bool l1p1x_dependent() const { return isDependentVariable( l1p1x_i() ); }
+//        inline bool l1p1y_dependent() const { return isDependentVariable( l1p1y_i() ); }
+//        inline bool l1p2x_dependent() const { return isDependentVariable( l1p2x_i() ); }
+//        inline bool l1p2y_dependent() const { return isDependentVariable( l1p2y_i() ); }
+//        inline bool l2p1x_dependent() const { return isDependentVariable( l2p1x_i() ); }
+//        inline bool l2p1y_dependent() const { return isDependentVariable( l2p1y_i() ); }
+//        inline bool l2p2x_dependent() const { return isDependentVariable( l2p2x_i() ); }
+//        inline bool l2p2y_dependent() const { return isDependentVariable( l2p2y_i() ); }
     public:
-        ConstraintPerpendicular(Line &l1, Line &l2);
-        ConstraintPerpendicular(Point &l1p1, Point &l1p2, Point &l2p1, Point &l2p2);
-        virtual ConstraintType getTypeId();
+        ConstraintPerpendicular(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // L2LAngle
     class ConstraintL2LAngle : public Constraint
     {
     private:
-        inline double* l1p1x() { return pvec[0]; }
-        inline double* l1p1y() { return pvec[1]; }
-        inline double* l1p2x() { return pvec[2]; }
-        inline double* l1p2y() { return pvec[3]; }
-        inline double* l2p1x() { return pvec[4]; }
-        inline double* l2p1y() { return pvec[5]; }
-        inline double* l2p2x() { return pvec[6]; }
-        inline double* l2p2y() { return pvec[7]; }
-        inline double* angle() { return pvec[8]; }
+    	enum Variables{ l1p1x, l1p1y, l1p2x, l1p2y, l2p1x, l2p1y, l2p2x, l2p2y, angle, variable_count };
+//        inline index_type l1p1x_i() const { return paramenters_indices[0]; }
+//        inline index_type l1p1y_i() const { return paramenters_indices[1]; }
+//        inline index_type l1p2x_i() const { return paramenters_indices[2]; }
+//        inline index_type l1p2y_i() const { return paramenters_indices[3]; }
+//        inline index_type l2p1x_i() const { return paramenters_indices[4]; }
+//        inline index_type l2p1y_i() const { return paramenters_indices[5]; }
+//        inline index_type l2p2x_i() const { return paramenters_indices[6]; }
+//        inline index_type l2p2y_i() const { return paramenters_indices[7]; }
+//        inline index_type angle_i() const { return paramenters_indices[8]; }
+//
+//        inline double value_l1p1x() const { return variables[l1p1x_i()]; }
+//        inline double value_l1p1y() const { return variables[l1p1y_i()]; }
+//        inline double value_l1p2x() const { return variables[l1p2x_i()]; }
+//        inline double value_l1p2y() const { return variables[l1p2y_i()]; }
+//        inline double value_l2p1x() const { return variables[l2p1x_i()]; }
+//        inline double value_l2p1y() const { return variables[l2p1y_i()]; }
+//        inline double value_l2p2x() const { return variables[l2p2x_i()]; }
+//        inline double value_l2p2y() const { return variables[l2p2y_i()]; }
+//        inline double value_angle() const { return variables[angle_i()]; }
+//
+//        inline bool l1p1x_dependent() const { return isDependentVariable( l1p1x_i() ); }
+//        inline bool l1p1y_dependent() const { return isDependentVariable( l1p1y_i() ); }
+//        inline bool l1p2x_dependent() const { return isDependentVariable( l1p2x_i() ); }
+//        inline bool l1p2y_dependent() const { return isDependentVariable( l1p2y_i() ); }
+//        inline bool l2p1x_dependent() const { return isDependentVariable( l2p1x_i() ); }
+//        inline bool l2p1y_dependent() const { return isDependentVariable( l2p1y_i() ); }
+//        inline bool l2p2x_dependent() const { return isDependentVariable( l2p2x_i() ); }
+//        inline bool l2p2y_dependent() const { return isDependentVariable( l2p2y_i() ); }
+//        inline bool angle_dependent() const { return isDependentVariable( angle_i() ); }
     public:
-        ConstraintL2LAngle(Line &l1, Line &l2, double *a);
-        ConstraintL2LAngle(Point &l1p1, Point &l1p2,
-                           Point &l2p1, Point &l2p2, double *a);
-        virtual ConstraintType getTypeId();
+        ConstraintL2LAngle(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
-        virtual double maxStep(MAP_pD_D &dir, double lim=1.);
+        virtual double grad(index_type);
+        virtual double maxStep( const std::vector<double>& dir, double lim=1.);
     };
 
     // MidpointOnLine
     class ConstraintMidpointOnLine : public Constraint
     {
     private:
-        inline double* l1p1x() { return pvec[0]; }
-        inline double* l1p1y() { return pvec[1]; }
-        inline double* l1p2x() { return pvec[2]; }
-        inline double* l1p2y() { return pvec[3]; }
-        inline double* l2p1x() { return pvec[4]; }
-        inline double* l2p1y() { return pvec[5]; }
-        inline double* l2p2x() { return pvec[6]; }
-        inline double* l2p2y() { return pvec[7]; }
+    	enum Variables{ l1p1x, l1p1y, l1p2x, l1p2y, l2p1x, l2p1y, l2p2x, l2p2y, variable_count };
+//        inline index_type l1p1x_i() const { return paramenters_indices[0]; }
+//        inline index_type l1p1y_i() const { return paramenters_indices[1]; }
+//        inline index_type l1p2x_i() const { return paramenters_indices[2]; }
+//        inline index_type l1p2y_i() const { return paramenters_indices[3]; }
+//        inline index_type l2p1x_i() const { return paramenters_indices[4]; }
+//        inline index_type l2p1y_i() const { return paramenters_indices[5]; }
+//        inline index_type l2p2x_i() const { return paramenters_indices[6]; }
+//        inline index_type l2p2y_i() const { return paramenters_indices[7]; }
+//
+//        inline double value_l1p1x() const { return variables[l1p1x_i()]; }
+//        inline double value_l1p1y() const { return variables[l1p1y_i()]; }
+//        inline double value_l1p2x() const { return variables[l1p2x_i()]; }
+//        inline double value_l1p2y() const { return variables[l1p2y_i()]; }
+//        inline double value_l2p1x() const { return variables[l2p1x_i()]; }
+//        inline double value_l2p1y() const { return variables[l2p1y_i()]; }
+//        inline double value_l2p2x() const { return variables[l2p2x_i()]; }
+//        inline double value_l2p2y() const { return variables[l2p2y_i()]; }
+//
+//        inline bool l1p1x_dependent() const ;// { return variables[l1p1x_i()]; }
+//        inline bool l1p1y_dependent() const ;// { return variables[l1p1y_i()]; }
+//        inline bool l1p2x_dependent() const ;// { return variables[l1p2x_i()]; }
+//        inline bool l1p2y_dependent() const ;// { return variables[l1p2y_i()]; }
+//        inline bool l2p1x_dependent() const ;// { return variables[l2p1x_i()]; }
+//        inline bool l2p1y_dependent() const ;// { return variables[l2p1y_i()]; }
+//        inline bool l2p2x_dependent() const ;// { return variables[l2p2x_i()]; }
+//        inline bool l2p2y_dependent() const ;// { return variables[l2p2y_i()]; }
     public:
-        ConstraintMidpointOnLine(Line &l1, Line &l2);
-        ConstraintMidpointOnLine(Point &l1p1, Point &l1p2, Point &l2p1, Point &l2p2);
-        virtual ConstraintType getTypeId();
+        ConstraintMidpointOnLine(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
 
     // TangentCircumf
     class ConstraintTangentCircumf : public Constraint
     {
     private:
-        inline double* c1x() { return pvec[0]; }
-        inline double* c1y() { return pvec[1]; }
-        inline double* c2x() { return pvec[2]; }
-        inline double* c2y() { return pvec[3]; }
-        inline double* r1() { return pvec[4]; }
-        inline double* r2() { return pvec[5]; }
+    	enum Variables{ c1x, c1y, c2x, c2y, r1, r2, variable_count };
+//        inline index_type c1x_i() const { return paramenters_indices[0]; }
+//        inline index_type c1y_i() const { return paramenters_indices[1]; }
+//        inline index_type c2x_i() const { return paramenters_indices[2]; }
+//        inline index_type c2y_i() const { return paramenters_indices[3]; }
+//        inline index_type r1_i() const  { return paramenters_indices[4]; }
+//        inline index_type r2_i() const  { return paramenters_indices[5]; }
+//
+//        inline double value_c1x() const { return variables[c1x_i()]; }
+//        inline double value_c1y() const { return variables[c1y_i()]; }
+//        inline double value_c2x() const { return variables[c2x_i()]; }
+//        inline double value_c2y() const { return variables[c2y_i()]; }
+//        inline double value_r1() const  { return variables[r1_i()]; }
+//        inline double value_r2() const  { return variables[r2_i()]; }
+//
+//        inline bool c1x_dependent() const ;// { return variables[c1x_i()]; }
+//        inline bool c1y_dependent() const ;// { return variables[c1y_i()]; }
+//        inline bool c2x_dependent() const ;// { return variables[c2x_i()]; }
+//        inline bool c2y_dependent() const ;// { return variables[c2y_i()]; }
+//        inline bool r1_dependent() const ;//  { return variables[r1_i()]; }
+//        inline bool r2_dependent() const ;//  { return variables[r2_i()]; }
         bool internal;
     public:
-        ConstraintTangentCircumf(Point &p1, Point &p2,
-                                 double *rd1, double *rd2, bool internal_=false);
-        virtual ConstraintType getTypeId();
+        ConstraintTangentCircumf(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef,
+        		bool internal_/*=false*/);
+        virtual ConstraintType getTypeId() const ;
+        virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(double *);
+        virtual double grad(index_type);
     };
+
+
 
 } //namespace GCS_EXP
 

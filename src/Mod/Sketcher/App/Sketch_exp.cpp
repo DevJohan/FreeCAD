@@ -81,12 +81,12 @@ void Sketch_exp::clear(void)
     Circles.clear();
 
     // deleting the doubles allocated with new
-    for (std::vector<double*>::iterator it = Parameters.begin(); it != Parameters.end(); ++it)
+    for (std::vector<double*>::iterator it = DependentVariables.begin(); it != DependentVariables.end(); ++it)
         if (*it) delete *it;
-    Parameters.clear();
-    for (std::vector<double*>::iterator it = FixParameters.begin(); it != FixParameters.end(); ++it)
+    DependentVariables.clear();
+    for (std::vector<double*>::iterator it = FixedVariables.begin(); it != FixedVariables.end(); ++it)
         if (*it) delete *it;
-    FixParameters.clear();
+    FixedVariables.clear();
 
     // deleting the geometry copied into this sketch
     for (std::vector<GeoDef>::iterator it = Geoms.begin(); it != Geoms.end(); ++it)
@@ -123,10 +123,10 @@ int Sketch_exp::setUpSketch(const std::vector<Part::Geometry *> &GeoList,
         addConstraints(ConstraintList);
 
     GCSsys.clearByTag(-1);
-    GCSsys.declareUnknowns(Parameters);
+    GCSsys.declareUnknowns( DependentVariables );
     GCSsys.initSolution();
-    GCSsys.getConflicting(Conflicting);
-    GCSsys.getRedundant(Redundant);
+    GCSsys.getConflicting( Conflicting );
+    GCSsys.getRedundant( Redundant );
     return GCSsys.dofsNumber();
 }
 
@@ -185,7 +185,7 @@ int Sketch_exp::addGeometry(const std::vector<Part::Geometry *> &geo, bool fixed
 
 int Sketch_exp::addPoint(const Part::GeomPoint &point, bool fixed)
 {
-    std::vector<double *> &params = fixed ? FixParameters : Parameters;
+    std::vector<double *> &params = fixed ? FixedVariables : DependentVariables;
 
     // create our own copy
     GeomPoint *p = static_cast<GeomPoint*>(point.clone());
@@ -225,7 +225,7 @@ int Sketch_exp::addLine(const Part::GeomLineSegment &line, bool fixed)
 
 int Sketch_exp::addLineSegment(const Part::GeomLineSegment &lineSegment, bool fixed)
 {
-    std::vector<double *> &params = fixed ? FixParameters : Parameters;
+    std::vector<double *> &params = fixed ? FixedVariables : DependentVariables;
 
     // create our own copy
     GeomLineSegment *lineSeg = static_cast<GeomLineSegment*>(lineSegment.clone());
@@ -273,7 +273,7 @@ int Sketch_exp::addLineSegment(const Part::GeomLineSegment &lineSegment, bool fi
 
 int Sketch_exp::addArc(const Part::GeomArcOfCircle &circleSegment, bool fixed)
 {
-    std::vector<double *> &params = fixed ? FixParameters : Parameters;
+    std::vector<double *> &params = fixed ? FixedVariables : DependentVariables;
 
     // create our own copy
     GeomArcOfCircle *aoc = static_cast<GeomArcOfCircle*>(circleSegment.clone());
@@ -325,7 +325,7 @@ int Sketch_exp::addArc(const Part::GeomArcOfCircle &circleSegment, bool fixed)
     a.start      = p1;
     a.end        = p2;
     a.center     = p3;
-    a.rad        = r;
+    a.radius     = r;
     a.startAngle = a1;
     a.endAngle   = a2;
     def.index = Arcs.size();
@@ -344,7 +344,7 @@ int Sketch_exp::addArc(const Part::GeomArcOfCircle &circleSegment, bool fixed)
 
 int Sketch_exp::addCircle(const Part::GeomCircle &cir, bool fixed)
 {
-    std::vector<double *> &params = fixed ? FixParameters : Parameters;
+    std::vector<double *> &params = fixed ? FixedVariables : DependentVariables;
 
     // create our own copy
     GeomCircle *circ = static_cast<GeomCircle*>(cir.clone());
@@ -374,7 +374,7 @@ int Sketch_exp::addCircle(const Part::GeomCircle &cir, bool fixed)
     // set the circle for later constraints
     GCS_EXP::Circle c;
     c.center = p1;
-    c.rad    = r;
+    c.radius = r;
     def.index = Circles.size();
     Circles.push_back(c);
 
@@ -576,7 +576,7 @@ int Sketch_exp::addCoordinateXConstraint(int geoId, PointPos pos, double value)
 
     if (pointId >= 0 && pointId < int(Points.size())) {
         double *val = new double(value);
-        FixParameters.push_back(val);
+        FixedVariables.push_back(val);
         GCS_EXP::Point &p = Points[pointId];
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintCoordinateX(p, val, tag);
@@ -593,7 +593,7 @@ int Sketch_exp::addCoordinateYConstraint(int geoId, PointPos pos, double value)
 
     if (pointId >= 0 && pointId < int(Points.size())) {
         double *val = new double(value);
-        FixParameters.push_back(val);
+        FixedVariables.push_back(val);
         GCS_EXP::Point &p = Points[pointId];
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintCoordinateY(p, val, tag);
@@ -611,8 +611,8 @@ int Sketch_exp::addDistanceXConstraint(int geoId, double value)
 
     GCS_EXP::Line &l = Lines[Geoms[geoId].index];
 
-    FixParameters.push_back(new double(value));
-    double *diff = FixParameters[FixParameters.size()-1];
+    FixedVariables.push_back(new double(value));
+    double *diff = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
     GCSsys.addConstraintDifference(l.p1.x, l.p2.x, diff, tag);
@@ -628,8 +628,8 @@ int Sketch_exp::addDistanceYConstraint(int geoId, double value)
 
     GCS_EXP::Line &l = Lines[Geoms[geoId].index];
 
-    FixParameters.push_back(new double(value));
-    double *diff = FixParameters[FixParameters.size()-1];
+    FixedVariables.push_back(new double(value));
+    double *diff = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
     GCSsys.addConstraintDifference(l.p1.y, l.p2.y, diff, tag);
@@ -649,8 +649,8 @@ int Sketch_exp::addDistanceXConstraint(int geoId1, PointPos pos1, int geoId2, Po
         GCS_EXP::Point &p1 = Points[pointId1];
         GCS_EXP::Point &p2 = Points[pointId2];
 
-        FixParameters.push_back(new double(value));
-        double *difference = FixParameters[FixParameters.size()-1];
+        FixedVariables.push_back(new double(value));
+        double *difference = FixedVariables[FixedVariables.size()-1];
 
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintDifference(p1.x, p2.x, difference, tag);
@@ -672,8 +672,8 @@ int Sketch_exp::addDistanceYConstraint(int geoId1, PointPos pos1, int geoId2, Po
         GCS_EXP::Point &p1 = Points[pointId1];
         GCS_EXP::Point &p2 = Points[pointId2];
 
-        FixParameters.push_back(new double(value));
-        double *difference = FixParameters[FixParameters.size()-1];
+        FixedVariables.push_back(new double(value));
+        double *difference = FixedVariables[FixedVariables.size()-1];
 
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintDifference(p1.y, p2.y, difference, tag);
@@ -878,11 +878,11 @@ int Sketch_exp::addPerpendicularConstraint(int geoId1, PointPos pos1, int geoId2
             double *radius;
             if (Geoms[geoId2].type == Arc) {
                 GCS_EXP::Arc &a2 = Arcs[Geoms[geoId2].index];
-                radius = a2.rad;
+                radius = a2.radius;
             }
             else {
                 GCS_EXP::Circle &c2 = Circles[Geoms[geoId2].index];
-                radius = c2.rad;
+                radius = c2.radius;
             }
             if (pos1 == start)
                 GCSsys.addConstraintPerpendicularCircle2Arc(center, radius, a1, tag);
@@ -1237,8 +1237,8 @@ int Sketch_exp::addDistanceConstraint(int geoId, double value)
     GCS_EXP::Line &l = Lines[Geoms[geoId].index];
 
     // add the parameter for the length
-    FixParameters.push_back(new double(value));
-    double *distance = FixParameters[FixParameters.size()-1];
+    FixedVariables.push_back(new double(value));
+    double *distance = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
     GCSsys.addConstraintP2PDistance(l.p1, l.p2, distance, tag);
@@ -1275,8 +1275,8 @@ int Sketch_exp::addDistanceConstraint(int geoId1, PointPos pos1, int geoId2, dou
         GCS_EXP::Line &l2 = Lines[Geoms[geoId2].index];
 
         // add the parameter for the distance
-        FixParameters.push_back(new double(value));
-        double *distance = FixParameters[FixParameters.size()-1];
+        FixedVariables.push_back(new double(value));
+        double *distance = FixedVariables[FixedVariables.size()-1];
 
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintP2LDistance(p1, l2, distance, tag);
@@ -1300,8 +1300,8 @@ int Sketch_exp::addDistanceConstraint(int geoId1, PointPos pos1, int geoId2, Poi
         GCS_EXP::Point &p2 = Points[pointId2];
 
         // add the parameter for the distance
-        FixParameters.push_back(new double(value));
-        double *distance = FixParameters[FixParameters.size()-1];
+        FixedVariables.push_back(new double(value));
+        double *distance = FixedVariables[FixedVariables.size()-1];
 
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintP2PDistance(p1, p2, distance, tag);
@@ -1317,8 +1317,8 @@ int Sketch_exp::addRadiusConstraint(int geoId, double value)
     if (Geoms[geoId].type == Circle) {
         GCS_EXP::Circle &c = Circles[Geoms[geoId].index];
         // add the parameter for the radius
-        FixParameters.push_back(new double(value));
-        double *radius = FixParameters[FixParameters.size()-1];
+        FixedVariables.push_back(new double(value));
+        double *radius = FixedVariables[FixedVariables.size()-1];
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintCircleRadius(c, radius, tag);
         return ConstraintsCounter;
@@ -1326,8 +1326,8 @@ int Sketch_exp::addRadiusConstraint(int geoId, double value)
     else if (Geoms[geoId].type == Arc) {
         GCS_EXP::Arc &a = Arcs[Geoms[geoId].index];
         // add the parameter for the radius
-        FixParameters.push_back(new double(value));
-        double *radius = FixParameters[FixParameters.size()-1];
+        FixedVariables.push_back(new double(value));
+        double *radius = FixedVariables[FixedVariables.size()-1];
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintArcRadius(a, radius, tag);
         return ConstraintsCounter;
@@ -1346,8 +1346,8 @@ int Sketch_exp::addAngleConstraint(int geoId, double value)
     GCS_EXP::Line &l = Lines[Geoms[geoId].index];
 
     // add the parameter for the angle
-    FixParameters.push_back(new double(value));
-    double *angle = FixParameters[FixParameters.size()-1];
+    FixedVariables.push_back(new double(value));
+    double *angle = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
     GCSsys.addConstraintP2PAngle(l.p1, l.p2, angle, tag);
@@ -1368,8 +1368,8 @@ int Sketch_exp::addAngleConstraint(int geoId1, int geoId2, double value)
     GCS_EXP::Line &l2 = Lines[Geoms[geoId2].index];
 
     // add the parameter for the angle
-    FixParameters.push_back(new double(value));
-    double *angle = FixParameters[FixParameters.size()-1];
+    FixedVariables.push_back(new double(value));
+    double *angle = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
     GCSsys.addConstraintL2LAngle(l1, l2, angle, tag);
@@ -1408,8 +1408,8 @@ int Sketch_exp::addAngleConstraint(int geoId1, PointPos pos1, int geoId2, PointP
         return -1;
 
     // add the parameter for the angle
-    FixParameters.push_back(new double(value));
-    double *angle = FixParameters[FixParameters.size()-1];
+    FixedVariables.push_back(new double(value));
+    double *angle = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
     GCSsys.addConstraintL2LAngle(*l1p1, *l1p2, *l2p1, *l2p2, angle, tag);
@@ -1430,9 +1430,9 @@ int Sketch_exp::addEqualConstraint(int geoId1, int geoId2)
         double dx2 = (*l2.p2.x - *l2.p1.x);
         double dy2 = (*l2.p2.y - *l2.p1.y);
         double value = (sqrt(dx1*dx1+dy1*dy1)+sqrt(dx2*dx2+dy2*dy2))/2;
-        // add the parameter for the common length (this is added to Parameters, not FixParameters)
-        Parameters.push_back(new double(value));
-        double *length = Parameters[Parameters.size()-1];
+        // add the parameter for the common length (this is added to DependentVariables, not FixedVariables)
+        DependentVariables.push_back(new double(value));
+        double *length = DependentVariables[DependentVariables.size()-1];
         int tag = ++ConstraintsCounter;
         GCSsys.addConstraintEqualLength(l1, l2, length, tag);
         return ConstraintsCounter;
@@ -1588,7 +1588,7 @@ bool Sketch_exp::updateGeometry()
                                         *Points[it->midPointId].y,
                                         0.0)
                               );
-                aoc->setRadius(*myArc.rad);
+                aoc->setRadius(*myArc.radius);
                 aoc->setRange(*myArc.startAngle, *myArc.endAngle);
             } else if (it->type == Circle) {
                 GeomCircle *circ = dynamic_cast<GeomCircle*>(it->geo);
@@ -1596,7 +1596,7 @@ bool Sketch_exp::updateGeometry()
                                          *Points[it->midPointId].y,
                                          0.0)
                                );
-                circ->setRadius(*Circles[it->index].rad);
+                circ->setRadius(*Circles[it->index].radius);
             }
         } catch (Base::Exception& e) {
             Base::Console().Error("Updating geometry: Error build geometry(%d): %s\n",
@@ -1640,9 +1640,9 @@ int Sketch_exp::solve(void)
             break;
         case 3: // last resort: augment the system with a second subsystem and use the SQP solver
             solvername = "SQP(augmented system)";
-            InitParameters.resize(Parameters.size());
+            InitParameters.resize(DependentVariables.size());
             int i=0;
-            for (std::vector<double*>::iterator it = Parameters.begin(); it != Parameters.end(); ++it, i++) {
+            for (std::vector<double*>::iterator it = DependentVariables.begin(); it != DependentVariables.end(); ++it, i++) {
                 InitParameters[i] = **it;
                 GCSsys.addConstraintEqual(*it, &InitParameters[i], -1);
             }
@@ -1764,7 +1764,7 @@ int Sketch_exp::initMove(int geoId, PointPos pos, bool fine)
             p0.x = &MoveParameters[0];
             p0.y = &MoveParameters[1];
             *p0.x = *center.x;
-            *p0.y = *center.y + *c.rad;
+            *p0.y = *center.y + *c.radius;
             GCSsys.addConstraintPointOnCircle(p0,c,-1);
             p1.x = &MoveParameters[2];
             p1.y = &MoveParameters[3];
@@ -1799,7 +1799,7 @@ int Sketch_exp::initMove(int geoId, PointPos pos, bool fine)
                 p0.x = &MoveParameters[0];
                 p0.y = &MoveParameters[1];
                 *p0.x = *center.x;
-                *p0.y = *center.y + *a.rad;
+                *p0.y = *center.y + *a.radius;
                 GCSsys.addConstraintPointOnArc(p0,a,-1);
             }
             p1.x = &MoveParameters[2];
