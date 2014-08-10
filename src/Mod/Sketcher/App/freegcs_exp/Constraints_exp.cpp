@@ -30,64 +30,51 @@ namespace GCS_EXP
 // Constraints
 ///////////////////////////////////////
 
-Constraint::Constraint()
-: origpvec(0), pvec(0), scale(1.), tag(0)
+Constraint::Constraint(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count
+): 	variables(paramenters),
+	paramenters_indices(indices),
+	dependent_variable_count( dependent_var_count ),
+	scale(1.),
+	tag(0)
 {
 }
 
-void Constraint::redirectParams(MAP_pD_pD redirectionmap)
-{
-    int i=0;
-    for (VEC_pD::iterator param=origpvec.begin();
-         param != origpvec.end(); ++param, i++) {
-        MAP_pD_pD::const_iterator it = redirectionmap.find(*param);
-        if (it != redirectionmap.end())
-            pvec[i] = it->second;
-    }
-}
-
-void Constraint::revertParams()
-{
-    pvec = origpvec;
-}
-
-ConstraintType Constraint::getTypeId()
+ConstraintType Constraint::getTypeId() const
 {
     return None;
 }
 
-void Constraint::rescale(double coef)
+void Constraint::rescale( double coef )
 {
     scale = coef * 1.;
 }
 
-double Constraint::error()
-{
-    return 0.;
-}
-
-double Constraint::grad(double *param)
-{
-    return 0.;
-}
-
-double Constraint::maxStep(MAP_pD_D &dir, double lim)
+double Constraint::maxStep( const std::vector<double>& dir, double lim )
 {
     return lim;
 }
 
 // Equal
-ConstraintEqual::ConstraintEqual(double *p1, double *p2)
-{
-    pvec.push_back(p1);
-    pvec.push_back(p2);
-    origpvec = pvec;
-    rescale();
+ConstraintEqual::ConstraintEqual(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintType ConstraintEqual::getTypeId()
+ConstraintType ConstraintEqual::getTypeId() const
 {
     return Equal;
+}
+
+Constraint* ConstraintEqual::clone() const
+{
+    return new ConstraintEqual(*this);
 }
 
 void ConstraintEqual::rescale(double coef)
@@ -97,30 +84,35 @@ void ConstraintEqual::rescale(double coef)
 
 double ConstraintEqual::error()
 {
-    return scale * (*param1() - *param2());
+    return scale * ( value<param1>() - value<param2>() );
 }
 
-double ConstraintEqual::grad(double *param)
+double ConstraintEqual::grad(index_type param)
 {
     double deriv=0.;
-    if (param == param1()) deriv += 1;
-    if (param == param2()) deriv += -1;
+    if (param == index<param1>()) deriv += 1;
+    if (param == index<param2>()) deriv += -1;
     return scale * deriv;
 }
 
 // Difference
-ConstraintDifference::ConstraintDifference(double *p1, double *p2, double *d)
-{
-    pvec.push_back(p1);
-    pvec.push_back(p2);
-    pvec.push_back(d);
-    origpvec = pvec;
-    rescale();
+ConstraintDifference::ConstraintDifference(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters,indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintType ConstraintDifference::getTypeId()
+ConstraintType ConstraintDifference::getTypeId() const
 {
     return Difference;
+}
+
+Constraint* ConstraintDifference::clone() const
+{
+    return new ConstraintDifference(*this);
 }
 
 void ConstraintDifference::rescale(double coef)
@@ -130,33 +122,36 @@ void ConstraintDifference::rescale(double coef)
 
 double ConstraintDifference::error()
 {
-    return scale * (*param2() - *param1() - *difference());
+    return scale * ( value<param2>() - value<param1>() - value<difference>() );
 }
 
-double ConstraintDifference::grad(double *param)
+double ConstraintDifference::grad(index_type param)
 {
     double deriv=0.;
-    if (param == param1()) deriv += -1;
-    if (param == param2()) deriv += 1;
-    if (param == difference()) deriv += -1;
+    if (param == index<param1>()) deriv += -1;
+    if (param == index<param2>()) deriv += 1;
+    if (param == index<difference>()) deriv += -1;
     return scale * deriv;
 }
 
 // P2PDistance
-ConstraintP2PDistance::ConstraintP2PDistance(Point &p1, Point &p2, double *d)
-{
-    pvec.push_back(p1.x);
-    pvec.push_back(p1.y);
-    pvec.push_back(p2.x);
-    pvec.push_back(p2.y);
-    pvec.push_back(d);
-    origpvec = pvec;
-    rescale();
+ConstraintP2PDistance::ConstraintP2PDistance(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintType ConstraintP2PDistance::getTypeId()
+ConstraintType ConstraintP2PDistance::getTypeId() const
 {
     return P2PDistance;
+}
+
+Constraint* ConstraintP2PDistance::clone() const
+{
+    return new ConstraintP2PDistance(*this);
 }
 
 void ConstraintP2PDistance::rescale(double coef)
@@ -166,55 +161,47 @@ void ConstraintP2PDistance::rescale(double coef)
 
 double ConstraintP2PDistance::error()
 {
-    double dx = (*p1x() - *p2x());
-    double dy = (*p1y() - *p2y());
+    double dx = (value<p1x>() - value<p2x>());
+    double dy = (value<p1y>() - value<p2y>());
     double d = sqrt(dx*dx + dy*dy);
-    double dist  = *distance();
+    double dist  = value<distance>();
     return scale * (d - dist);
 }
 
-double ConstraintP2PDistance::grad(double *param)
+double ConstraintP2PDistance::grad(index_type param)
 {
     double deriv=0.;
-    if (param == p1x() || param == p1y() ||
-        param == p2x() || param == p2y()) {
-        double dx = (*p1x() - *p2x());
-        double dy = (*p1y() - *p2y());
+    if (param == index<p1x>() || param == index<p1y>() ||
+        param == index<p2x>() || param == index<p2y>()) {
+        double dx = (value<p1x>() - value<p2x>());
+        double dy = (value<p1y>() - value<p2y>());
         double d = sqrt(dx*dx + dy*dy);
-        if (param == p1x()) deriv += dx/d;
-        if (param == p1y()) deriv += dy/d;
-        if (param == p2x()) deriv += -dx/d;
-        if (param == p2y()) deriv += -dy/d;
+        if (param == index<p1x>()) deriv += dx/d;
+        if (param == index<p1y>()) deriv += dy/d;
+        if (param == index<p2x>()) deriv += -dx/d;
+        if (param == index<p2y>()) deriv += -dy/d;
     }
-    if (param == distance()) deriv += -1.;
+    if (param == value<distance>()) deriv += -1.;
 
     return scale * deriv;
 }
 
-double ConstraintP2PDistance::maxStep(MAP_pD_D &dir, double lim)
+double ConstraintP2PDistance::maxStep( const std::vector<double>& dir, double lim )
 {
-    MAP_pD_D::iterator it;
-    // distance() >= 0
-    it = dir.find(distance());
-    if (it != dir.end()) {
-        if (it->second < 0.)
-            lim = std::min(lim, -(*distance()) / it->second);
+    if( is_dependent<distance>() && dir[index<distance>()] < 0. ) {
+            lim = std::min(lim, -(value<distance>()) / dir[ index<distance>() ] );
     }
-    // restrict actual distance change
+    // restrict actual value_distance change
     double ddx=0.,ddy=0.;
-    it = dir.find(p1x());
-    if (it != dir.end()) ddx += it->second;
-    it = dir.find(p1y());
-    if (it != dir.end()) ddy += it->second;
-    it = dir.find(p2x());
-    if (it != dir.end()) ddx -= it->second;
-    it = dir.find(p2y());
-    if (it != dir.end()) ddy -= it->second;
+    if( is_dependent<p1x>() ) ddx += dir[ index<p1x>() ];
+    if( is_dependent<p1y>() ) ddy += dir[ index<p1y>() ];
+    if( is_dependent<p2x>() ) ddx -= dir[ index<p2x>() ];
+    if( is_dependent<p2y>() ) ddy -= dir[ index<p2y>() ];
     double dd = sqrt(ddx*ddx+ddy*ddy);
-    double dist  = *distance();
+    double dist  = value<distance>();
     if (dd > dist) {
-        double dx = (*p1x() - *p2x());
-        double dy = (*p1y() - *p2y());
+        double dx = (value<p1x>() - value<p2x>());
+        double dy = (value<p1y>() - value<p2y>());
         double d = sqrt(dx*dx + dy*dy);
         if (dd > d)
             lim = std::min(lim, std::max(d,dist)/dd);
@@ -223,22 +210,26 @@ double ConstraintP2PDistance::maxStep(MAP_pD_D &dir, double lim)
 }
 
 // P2PAngle
-ConstraintP2PAngle::ConstraintP2PAngle(Point &p1, Point &p2, double *a, double da_)
-: da(da_)
-{
-    pvec.push_back(p1.x);
-    pvec.push_back(p1.y);
-    pvec.push_back(p2.x);
-    pvec.push_back(p2.y);
-    pvec.push_back(a);
-    origpvec = pvec;
-    rescale();
+ConstraintP2PAngle::ConstraintP2PAngle(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef,
+		double da_
+):Constraint(paramenters,indices,dependent_var_count), da(da_){
+    rescale( scale_coef );
 }
 
-ConstraintType ConstraintP2PAngle::getTypeId()
+ConstraintType ConstraintP2PAngle::getTypeId() const
 {
     return P2PAngle;
 }
+
+Constraint* ConstraintP2PAngle::clone() const
+{
+    return new ConstraintP2PAngle(*this);
+}
+
 
 void ConstraintP2PAngle::rescale(double coef)
 {
@@ -247,9 +238,9 @@ void ConstraintP2PAngle::rescale(double coef)
 
 double ConstraintP2PAngle::error()
 {
-    double dx = (*p2x() - *p1x());
-    double dy = (*p2y() - *p1y());
-    double a = *angle() + da;
+    double dx = (value<p2x>() - value<p1x>());
+    double dy = (value<p2y>() - value<p1y>());
+    double a = value<angle>() + da;
     double ca = cos(a);
     double sa = sin(a);
     double x = dx*ca + dy*sa;
@@ -257,14 +248,14 @@ double ConstraintP2PAngle::error()
     return scale * atan2(y,x);
 }
 
-double ConstraintP2PAngle::grad(double *param)
+double ConstraintP2PAngle::grad(index_type param)
 {
     double deriv=0.;
-    if (param == p1x() || param == p1y() ||
-        param == p2x() || param == p2y()) {
-        double dx = (*p2x() - *p1x());
-        double dy = (*p2y() - *p1y());
-        double a = *angle() + da;
+    if (param == index<p1x>() || param == index<p1y>() ||
+        param == index<p2x>() || param == index<p2y>()) {
+        double dx = (value<p2x>() - value<p1x>());
+        double dy = (value<p2y>() - value<p1y>());
+        double a = value<angle>() + da;
         double ca = cos(a);
         double sa = sin(a);
         double x = dx*ca + dy*sa;
@@ -272,45 +263,45 @@ double ConstraintP2PAngle::grad(double *param)
         double r2 = dx*dx+dy*dy;
         dx = -y/r2;
         dy = x/r2;
-        if (param == p1x()) deriv += (-ca*dx + sa*dy);
-        if (param == p1y()) deriv += (-sa*dx - ca*dy);
-        if (param == p2x()) deriv += ( ca*dx - sa*dy);
-        if (param == p2y()) deriv += ( sa*dx + ca*dy);
+        if (param == index<p1x>()) deriv += (-ca*dx + sa*dy);
+        if (param == index<p1y>()) deriv += (-sa*dx - ca*dy);
+        if (param == index<p2x>()) deriv += ( ca*dx - sa*dy);
+        if (param == index<p2y>()) deriv += ( sa*dx + ca*dy);
     }
-    if (param == angle()) deriv += -1;
+    if (param == index<angle>()) deriv += -1;
 
     return scale * deriv;
 }
 
-double ConstraintP2PAngle::maxStep(MAP_pD_D &dir, double lim)
+double ConstraintP2PAngle::maxStep( const std::vector<double>& dir, double lim)
 {
-    // step(angle()) <= pi/18 = 10°
-    MAP_pD_D::iterator it = dir.find(angle());
-    if (it != dir.end()) {
-        double step = std::abs(it->second);
-        if (step > M_PI/18.)
-            lim = std::min(lim, (M_PI/18.) / step);
+    // step(value_angle()) <= pi/18 = 10°
+    if( is_dependent<angle>() ) {
+        double step = std::abs( dir[index<angle>()] );
+        if( step > M_PI/18. )
+            lim = std::min( lim, (M_PI/18.) / step );
     }
     return lim;
 }
 
 // P2LDistance
-ConstraintP2LDistance::ConstraintP2LDistance(Point &p, Line &l, double *d)
-{
-    pvec.push_back(p.x);
-    pvec.push_back(p.y);
-    pvec.push_back(l.p1.x);
-    pvec.push_back(l.p1.y);
-    pvec.push_back(l.p2.x);
-    pvec.push_back(l.p2.y);
-    pvec.push_back(d);
-    origpvec = pvec;
-    rescale();
+ConstraintP2LDistance::ConstraintP2LDistance(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint(paramenters,indices,dependent_var_count){
+    rescale( scale_coef );
 }
 
-ConstraintType ConstraintP2LDistance::getTypeId()
+ConstraintType ConstraintP2LDistance::getTypeId() const
 {
     return P2LDistance;
+}
+
+Constraint* ConstraintP2LDistance::clone() const
+{
+    return new ConstraintP2LDistance(*this);
 }
 
 void ConstraintP2LDistance::rescale(double coef)
@@ -320,9 +311,9 @@ void ConstraintP2LDistance::rescale(double coef)
 
 double ConstraintP2LDistance::error()
 {
-    double x0=*p0x(), x1=*p1x(), x2=*p2x();
-    double y0=*p0y(), y1=*p1y(), y2=*p2y();
-    double dist = *distance();
+    double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+    double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
+    double dist =  value<distance>();
     double dx = x2-x1;
     double dy = y2-y1;
     double d = sqrt(dx*dx+dy*dy);
@@ -330,67 +321,60 @@ double ConstraintP2LDistance::error()
     return scale * (area/d - dist);
 }
 
-double ConstraintP2LDistance::grad(double *param)
+double ConstraintP2LDistance::grad(index_type param)
 {
     double deriv=0.;
     // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
     // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
     // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
-    if (param == p0x() || param == p0y() ||
-        param == p1x() || param == p1y() ||
-        param == p2x() || param == p2y()) {
-        double x0=*p0x(), x1=*p1x(), x2=*p2x();
-        double y0=*p0y(), y1=*p1y(), y2=*p2y();
+    if (param == index<px>() || param == index<py>() ||
+        param == index<l_p1x>() || param == index<l_p1y>() ||
+        param == index<l_p2x>() || param == index<l_p2y>()) {
+        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
         double dx = x2-x1;
         double dy = y2-y1;
         double d2 = dx*dx+dy*dy;
         double d = sqrt(d2);
         double area = -x0*dy+y0*dx+x1*y2-x2*y1;
-        if (param == p0x()) deriv += (y1-y2) / d;
-        if (param == p0y()) deriv += (x2-x1) / d ;
-        if (param == p1x()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
-        if (param == p1y()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
-        if (param == p2x()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
-        if (param == p2y()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
+        if (param == index<px>()) deriv += (y1-y2) / d;
+        if (param == index<py>()) deriv += (x2-x1) / d ;
+        if (param == index<l_p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
+        if (param == index<l_p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
+        if (param == index<l_p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
+        if (param == index<l_p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
         if (area < 0)
             deriv *= -1;
     }
-    if (param == distance()) deriv += -1;
+    if (param == index<distance>()) deriv += -1;
 
     return scale * deriv;
 }
 
-double ConstraintP2LDistance::maxStep(MAP_pD_D &dir, double lim)
+double ConstraintP2LDistance::maxStep( const std::vector<double>& dir, double lim)
 {
-    MAP_pD_D::iterator it;
-    // distance() >= 0
-    it = dir.find(distance());
-    if (it != dir.end()) {
-        if (it->second < 0.)
-            lim = std::min(lim, -(*distance()) / it->second);
+	std::map<index_type, double>::iterator it;
+    // value_distance() >= 0
+    if ( is_dependent<distance>() ) {
+        if ( dir[ index<distance>() ] < 0. )
+            lim = std::min(lim, -(value<distance>()) / dir[ index<distance>() ]);
     }
     // restrict actual area change
     double darea=0.;
-    double x0=*p0x(), x1=*p1x(), x2=*p2x();
-    double y0=*p0y(), y1=*p1y(), y2=*p2y();
-    it = dir.find(p0x());
-    if (it != dir.end()) darea += (y1-y2) * it->second;
-    it = dir.find(p0y());
-    if (it != dir.end()) darea += (x2-x1) * it->second;
-    it = dir.find(p1x());
-    if (it != dir.end()) darea += (y2-y0) * it->second;
-    it = dir.find(p1y());
-    if (it != dir.end()) darea += (x0-x2) * it->second;
-    it = dir.find(p2x());
-    if (it != dir.end()) darea += (y0-y1) * it->second;
-    it = dir.find(p2y());
-    if (it != dir.end()) darea += (x1-x0) * it->second;
+    double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+    double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
+    if( is_dependent<px>() ) darea += (y1-y2) * dir[ index<px>() ];
+    if( is_dependent<py>() ) darea += (x2-x1) * dir[ index<py>() ];
+    if( is_dependent<l_p1x>() ) darea += (y2-y0) * dir[ index<l_p1x>() ];
+    if( is_dependent<l_p1y>() ) darea += (x0-x2) * dir[ index<l_p1y>() ];
+    if( is_dependent<l_p2x>() ) darea += (y0-y1) * dir[ index<l_p2x>() ];
+    if( is_dependent<l_p2y>() ) darea += (x1-x0) * dir[ index<l_p2y>() ];
 
     darea = std::abs(darea);
     if (darea > 0.) {
         double dx = x2-x1;
         double dy = y2-y1;
-        double area = 0.3*(*distance())*sqrt(dx*dx+dy*dy);
+        double area = 0.3*( value<distance>() )*sqrt(dx*dx+dy*dy);
         if (darea > area) {
             area = std::max(area, 0.3*std::abs(-x0*dy+y0*dx+x1*y2-x2*y1));
             if (darea > area)
@@ -401,33 +385,23 @@ double ConstraintP2LDistance::maxStep(MAP_pD_D &dir, double lim)
 }
 
 // PointOnLine
-ConstraintPointOnLine::ConstraintPointOnLine(Point &p, Line &l)
-{
-    pvec.push_back(p.x);
-    pvec.push_back(p.y);
-    pvec.push_back(l.p1.x);
-    pvec.push_back(l.p1.y);
-    pvec.push_back(l.p2.x);
-    pvec.push_back(l.p2.y);
-    origpvec = pvec;
-    rescale();
+ConstraintPointOnLine::ConstraintPointOnLine(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint(paramenters,indices,dependent_var_count){
+    rescale( scale_coef );
 }
 
-ConstraintPointOnLine::ConstraintPointOnLine(Point &p, Point &lp1, Point &lp2)
-{
-    pvec.push_back(p.x);
-    pvec.push_back(p.y);
-    pvec.push_back(lp1.x);
-    pvec.push_back(lp1.y);
-    pvec.push_back(lp2.x);
-    pvec.push_back(lp2.y);
-    origpvec = pvec;
-    rescale();
-}
-
-ConstraintType ConstraintPointOnLine::getTypeId()
+ConstraintType ConstraintPointOnLine::getTypeId() const
 {
     return PointOnLine;
+}
+
+Constraint* ConstraintPointOnLine::clone() const
+{
+    return new ConstraintPointOnLine(*this);
 }
 
 void ConstraintPointOnLine::rescale(double coef)
@@ -437,8 +411,8 @@ void ConstraintPointOnLine::rescale(double coef)
 
 double ConstraintPointOnLine::error()
 {
-    double x0=*p0x(), x1=*p1x(), x2=*p2x();
-    double y0=*p0y(), y1=*p1y(), y2=*p2y();
+    double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+    double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
     double dx = x2-x1;
     double dy = y2-y1;
     double d = sqrt(dx*dx+dy*dy);
@@ -446,60 +420,50 @@ double ConstraintPointOnLine::error()
     return scale * area/d;
 }
 
-double ConstraintPointOnLine::grad(double *param)
+double ConstraintPointOnLine::grad(index_type param)
 {
     double deriv=0.;
     // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
     // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
     // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
-    if (param == p0x() || param == p0y() ||
-        param == p1x() || param == p1y() ||
-        param == p2x() || param == p2y()) {
-        double x0=*p0x(), x1=*p1x(), x2=*p2x();
-        double y0=*p0y(), y1=*p1y(), y2=*p2y();
+    if (param == index<px>() || param == index<py>() ||
+        param == index<l_p1x>() || param == index<l_p1y>() ||
+        param == index<l_p2x>() || param == index<l_p2y>()) {
+        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
         double dx = x2-x1;
         double dy = y2-y1;
         double d2 = dx*dx+dy*dy;
         double d = sqrt(d2);
         double area = -x0*dy+y0*dx+x1*y2-x2*y1;
-        if (param == p0x()) deriv += (y1-y2) / d;
-        if (param == p0y()) deriv += (x2-x1) / d ;
-        if (param == p1x()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
-        if (param == p1y()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
-        if (param == p2x()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
-        if (param == p2y()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
+        if (param == index<px>()) deriv += (y1-y2) / d;
+        if (param == index<py>()) deriv += (x2-x1) / d ;
+        if (param == index<l_p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
+        if (param == index<l_p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
+        if (param == index<l_p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
+        if (param == index<l_p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
     }
     return scale * deriv;
 }
 
 // PointOnPerpBisector
-ConstraintPointOnPerpBisector::ConstraintPointOnPerpBisector(Point &p, Line &l)
-{
-    pvec.push_back(p.x);
-    pvec.push_back(p.y);
-    pvec.push_back(l.p1.x);
-    pvec.push_back(l.p1.y);
-    pvec.push_back(l.p2.x);
-    pvec.push_back(l.p2.y);
-    origpvec = pvec;
-    rescale();
+ConstraintPointOnPerpBisector::ConstraintPointOnPerpBisector(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintPointOnPerpBisector::ConstraintPointOnPerpBisector(Point &p, Point &lp1, Point &lp2)
-{
-    pvec.push_back(p.x);
-    pvec.push_back(p.y);
-    pvec.push_back(lp1.x);
-    pvec.push_back(lp1.y);
-    pvec.push_back(lp2.x);
-    pvec.push_back(lp2.y);
-    origpvec = pvec;
-    rescale();
-}
-
-ConstraintType ConstraintPointOnPerpBisector::getTypeId()
+ConstraintType ConstraintPointOnPerpBisector::getTypeId() const
 {
     return PointOnPerpBisector;
+}
+
+Constraint* ConstraintPointOnPerpBisector::clone() const
+{
+    return new ConstraintPointOnPerpBisector(*this);
 }
 
 void ConstraintPointOnPerpBisector::rescale(double coef)
@@ -509,195 +473,163 @@ void ConstraintPointOnPerpBisector::rescale(double coef)
 
 double ConstraintPointOnPerpBisector::error()
 {
-    double dx1 = *p1x() - *p0x();
-    double dy1 = *p1y() - *p0y();
-    double dx2 = *p2x() - *p0x();
-    double dy2 = *p2y() - *p0y();
+    double dx1 = value<p1x>() - value<p0x>();
+    double dy1 = value<p1y>() - value<p0y>();
+    double dx2 = value<p2x>() - value<p0x>();
+    double dy2 = value<p2y>() - value<p0y>();
     return scale * (sqrt(dx1*dx1+dy1*dy1) - sqrt(dx2*dx2+dy2*dy2));
 }
 
-double ConstraintPointOnPerpBisector::grad(double *param)
+double ConstraintPointOnPerpBisector::grad(index_type param)
 {
     double deriv=0.;
-    if (param == p0x() || param == p0y() ||
-        param == p1x() || param == p1y()) {
-        double dx1 = *p1x() - *p0x();
-        double dy1 = *p1y() - *p0y();
-        if (param == p0x()) deriv -= dx1/sqrt(dx1*dx1+dy1*dy1);
-        if (param == p0y()) deriv -= dy1/sqrt(dx1*dx1+dy1*dy1);
-        if (param == p1x()) deriv += dx1/sqrt(dx1*dx1+dy1*dy1);
-        if (param == p1y()) deriv += dy1/sqrt(dx1*dx1+dy1*dy1);
+    if (param == index<p0x>() || param == index<p0y>() ||
+        param == index<p1x>() || param == index<p1y>()) {
+        double dx1 = value<p1x>() - value<p0x>();
+        double dy1 = value<p1y>() - value<p0y>();
+        if (param == index<p0x>()) deriv -= dx1/sqrt(dx1*dx1+dy1*dy1);
+        if (param == index<p0y>()) deriv -= dy1/sqrt(dx1*dx1+dy1*dy1);
+        if (param == index<p1x>()) deriv += dx1/sqrt(dx1*dx1+dy1*dy1);
+        if (param == index<p1y>()) deriv += dy1/sqrt(dx1*dx1+dy1*dy1);
     }
-    if (param == p0x() || param == p0y() ||
-        param == p2x() || param == p2y()) {
-        double dx2 = *p2x() - *p0x();
-        double dy2 = *p2y() - *p0y();
-        if (param == p0x()) deriv += dx2/sqrt(dx2*dx2+dy2*dy2);
-        if (param == p0y()) deriv += dy2/sqrt(dx2*dx2+dy2*dy2);
-        if (param == p2x()) deriv -= dx2/sqrt(dx2*dx2+dy2*dy2);
-        if (param == p2y()) deriv -= dy2/sqrt(dx2*dx2+dy2*dy2);
+    if (param == index<p0x>() || param == index<p0y>() ||
+        param == index<p2x>() || param == index<p2y>()) {
+        double dx2 = value<p2x>() - value<p0x>();
+        double dy2 = value<p2y>() - value<p0y>();
+        if (param == index<p0x>()) deriv += dx2/sqrt(dx2*dx2+dy2*dy2);
+        if (param == index<p0y>()) deriv += dy2/sqrt(dx2*dx2+dy2*dy2);
+        if (param == index<p2x>()) deriv -= dx2/sqrt(dx2*dx2+dy2*dy2);
+        if (param == index<p2y>()) deriv -= dy2/sqrt(dx2*dx2+dy2*dy2);
     }
     return scale * deriv;
 }
 
 // Parallel
-ConstraintParallel::ConstraintParallel(Line &l1, Line &l2)
-{
-    pvec.push_back(l1.p1.x);
-    pvec.push_back(l1.p1.y);
-    pvec.push_back(l1.p2.x);
-    pvec.push_back(l1.p2.y);
-    pvec.push_back(l2.p1.x);
-    pvec.push_back(l2.p1.y);
-    pvec.push_back(l2.p2.x);
-    pvec.push_back(l2.p2.y);
-    origpvec = pvec;
-    rescale();
+ConstraintParallel::ConstraintParallel(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintType ConstraintParallel::getTypeId()
+ConstraintType ConstraintParallel::getTypeId() const
 {
     return Parallel;
 }
 
+Constraint* ConstraintParallel::clone() const
+{
+    return new ConstraintParallel(*this);
+}
+
 void ConstraintParallel::rescale(double coef)
 {
-    double dx1 = (*l1p1x() - *l1p2x());
-    double dy1 = (*l1p1y() - *l1p2y());
-    double dx2 = (*l2p1x() - *l2p2x());
-    double dy2 = (*l2p1y() - *l2p2y());
+    double dx1 = (value<l1p1x>() - value<l1p2x>());
+    double dy1 = (value<l1p1y>() - value<l1p2y>());
+    double dx2 = (value<l2p1x>() - value<l2p2x>());
+    double dy2 = (value<l2p1y>() - value<l2p2y>());
     scale = coef / sqrt((dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2));
 }
 
 double ConstraintParallel::error()
 {
-    double dx1 = (*l1p1x() - *l1p2x());
-    double dy1 = (*l1p1y() - *l1p2y());
-    double dx2 = (*l2p1x() - *l2p2x());
-    double dy2 = (*l2p1y() - *l2p2y());
+    double dx1 = (value<l1p1x>() - value<l1p2x>());
+    double dy1 = (value<l1p1y>() - value<l1p2y>());
+    double dx2 = (value<l2p1x>() - value<l2p2x>());
+    double dy2 = (value<l2p1y>() - value<l2p2y>());
     return scale * (dx1*dy2 - dy1*dx2);
 }
 
-double ConstraintParallel::grad(double *param)
+double ConstraintParallel::grad(index_type param)
 {
     double deriv=0.;
-    if (param == l1p1x()) deriv += (*l2p1y() - *l2p2y()); // = dy2
-    if (param == l1p2x()) deriv += -(*l2p1y() - *l2p2y()); // = -dy2
-    if (param == l1p1y()) deriv += -(*l2p1x() - *l2p2x()); // = -dx2
-    if (param == l1p2y()) deriv += (*l2p1x() - *l2p2x()); // = dx2
+    if (param == index<l1p1x>()) deriv +=  (value<l2p1y>() - value<l2p2y>()); // = dy2
+    if (param == index<l1p2x>()) deriv += -(value<l2p1y>() - value<l2p2y>()); // = -dy2
+    if (param == index<l1p1y>()) deriv += -(value<l2p1x>() - value<l2p2x>()); // = -dx2
+    if (param == index<l1p2y>()) deriv +=  (value<l2p1x>() - value<l2p2x>()); // = dx2
 
-    if (param == l2p1x()) deriv += -(*l1p1y() - *l1p2y()); // = -dy1
-    if (param == l2p2x()) deriv += (*l1p1y() - *l1p2y()); // = dy1
-    if (param == l2p1y()) deriv += (*l1p1x() - *l1p2x()); // = dx1
-    if (param == l2p2y()) deriv += -(*l1p1x() - *l1p2x()); // = -dx1
+    if (param == index<l2p1x>()) deriv += -(value<l1p1y>() - value<l1p2y>()); // = -dy1
+    if (param == index<l2p2x>()) deriv +=  (value<l1p1y>() - value<l1p2y>()); // = dy1
+    if (param == index<l2p1y>()) deriv +=  (value<l1p1x>() - value<l1p2x>()); // = dx1
+    if (param == index<l2p2y>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
 
     return scale * deriv;
 }
 
 // Perpendicular
-ConstraintPerpendicular::ConstraintPerpendicular(Line &l1, Line &l2)
-{
-    pvec.push_back(l1.p1.x);
-    pvec.push_back(l1.p1.y);
-    pvec.push_back(l1.p2.x);
-    pvec.push_back(l1.p2.y);
-    pvec.push_back(l2.p1.x);
-    pvec.push_back(l2.p1.y);
-    pvec.push_back(l2.p2.x);
-    pvec.push_back(l2.p2.y);
-    origpvec = pvec;
-    rescale();
+ConstraintPerpendicular::ConstraintPerpendicular(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintPerpendicular::ConstraintPerpendicular(Point &l1p1, Point &l1p2,
-                                                 Point &l2p1, Point &l2p2)
-{
-    pvec.push_back(l1p1.x);
-    pvec.push_back(l1p1.y);
-    pvec.push_back(l1p2.x);
-    pvec.push_back(l1p2.y);
-    pvec.push_back(l2p1.x);
-    pvec.push_back(l2p1.y);
-    pvec.push_back(l2p2.x);
-    pvec.push_back(l2p2.y);
-    origpvec = pvec;
-    rescale();
-}
-
-ConstraintType ConstraintPerpendicular::getTypeId()
+ConstraintType ConstraintPerpendicular::getTypeId() const
 {
     return Perpendicular;
 }
 
+Constraint* ConstraintPerpendicular::clone() const
+{
+    return new ConstraintPerpendicular(*this);
+}
+
 void ConstraintPerpendicular::rescale(double coef)
 {
-    double dx1 = (*l1p1x() - *l1p2x());
-    double dy1 = (*l1p1y() - *l1p2y());
-    double dx2 = (*l2p1x() - *l2p2x());
-    double dy2 = (*l2p1y() - *l2p2y());
+    double dx1 = (value<l1p1x>() - value<l1p2x>());
+    double dy1 = (value<l1p1y>() - value<l1p2y>());
+    double dx2 = (value<l2p1x>() - value<l2p2x>());
+    double dy2 = (value<l2p1y>() - value<l2p2y>());
     scale = coef / sqrt((dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2));
 }
 
 double ConstraintPerpendicular::error()
 {
-    double dx1 = (*l1p1x() - *l1p2x());
-    double dy1 = (*l1p1y() - *l1p2y());
-    double dx2 = (*l2p1x() - *l2p2x());
-    double dy2 = (*l2p1y() - *l2p2y());
+    double dx1 = (value<l1p1x>() - value<l1p2x>());
+    double dy1 = (value<l1p1y>() - value<l1p2y>());
+    double dx2 = (value<l2p1x>() - value<l2p2x>());
+    double dy2 = (value<l2p1y>() - value<l2p2y>());
     return scale * (dx1*dx2 + dy1*dy2);
 }
 
-double ConstraintPerpendicular::grad(double *param)
+double ConstraintPerpendicular::grad(index_type param)
 {
     double deriv=0.;
-    if (param == l1p1x()) deriv += (*l2p1x() - *l2p2x()); // = dx2
-    if (param == l1p2x()) deriv += -(*l2p1x() - *l2p2x()); // = -dx2
-    if (param == l1p1y()) deriv += (*l2p1y() - *l2p2y()); // = dy2
-    if (param == l1p2y()) deriv += -(*l2p1y() - *l2p2y()); // = -dy2
+    if (param == index<l1p1x>()) deriv +=  (value<l2p1x>() - value<l2p2x>()); // = dx2
+    if (param == index<l1p2x>()) deriv += -(value<l2p1x>() - value<l2p2x>()); // = -dx2
+    if (param == index<l1p1y>()) deriv +=  (value<l2p1y>() - value<l2p2y>()); // = dy2
+    if (param == index<l1p2y>()) deriv += -(value<l2p1y>() - value<l2p2y>()); // = -dy2
 
-    if (param == l2p1x()) deriv += (*l1p1x() - *l1p2x()); // = dx1
-    if (param == l2p2x()) deriv += -(*l1p1x() - *l1p2x()); // = -dx1
-    if (param == l2p1y()) deriv += (*l1p1y() - *l1p2y()); // = dy1
-    if (param == l2p2y()) deriv += -(*l1p1y() - *l1p2y()); // = -dy1
+    if (param == index<l2p1x>()) deriv +=  (value<l1p1x>() - value<l1p2x>()); // = dx1
+    if (param == index<l2p2x>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
+    if (param == index<l2p1y>()) deriv +=  (value<l1p1y>() - value<l1p2y>()); // = dy1
+    if (param == index<l2p2y>()) deriv += -(value<l1p1y>() - value<l1p2y>()); // = -dy1
 
     return scale * deriv;
 }
 
 // L2LAngle
-ConstraintL2LAngle::ConstraintL2LAngle(Line &l1, Line &l2, double *a)
-{
-    pvec.push_back(l1.p1.x);
-    pvec.push_back(l1.p1.y);
-    pvec.push_back(l1.p2.x);
-    pvec.push_back(l1.p2.y);
-    pvec.push_back(l2.p1.x);
-    pvec.push_back(l2.p1.y);
-    pvec.push_back(l2.p2.x);
-    pvec.push_back(l2.p2.y);
-    pvec.push_back(a);
-    origpvec = pvec;
-    rescale();
+ConstraintL2LAngle::ConstraintL2LAngle(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintL2LAngle::ConstraintL2LAngle(Point &l1p1, Point &l1p2,
-                                       Point &l2p1, Point &l2p2, double *a)
-{
-    pvec.push_back(l1p1.x);
-    pvec.push_back(l1p1.y);
-    pvec.push_back(l1p2.x);
-    pvec.push_back(l1p2.y);
-    pvec.push_back(l2p1.x);
-    pvec.push_back(l2p1.y);
-    pvec.push_back(l2p2.x);
-    pvec.push_back(l2p2.y);
-    pvec.push_back(a);
-    origpvec = pvec;
-    rescale();
-}
-
-ConstraintType ConstraintL2LAngle::getTypeId()
+ConstraintType ConstraintL2LAngle::getTypeId() const
 {
     return L2LAngle;
+}
+
+Constraint* ConstraintL2LAngle::clone() const
+{
+    return new ConstraintL2LAngle(*this);
 }
 
 void ConstraintL2LAngle::rescale(double coef)
@@ -707,11 +639,11 @@ void ConstraintL2LAngle::rescale(double coef)
 
 double ConstraintL2LAngle::error()
 {
-    double dx1 = (*l1p2x() - *l1p1x());
-    double dy1 = (*l1p2y() - *l1p1y());
-    double dx2 = (*l2p2x() - *l2p1x());
-    double dy2 = (*l2p2y() - *l2p1y());
-    double a = atan2(dy1,dx1) + *angle();
+    double dx1 = (value<l1p2x>() - value<l1p1x>());
+    double dy1 = (value<l1p2y>() - value<l1p1y>());
+    double dx2 = (value<l2p2x>() - value<l2p1x>());
+    double dy2 = (value<l2p2y>() - value<l2p1y>());
+    double a = atan2(dy1,dx1) + value<angle>();
     double ca = cos(a);
     double sa = sin(a);
     double x2 = dx2*ca + dy2*sa;
@@ -719,26 +651,26 @@ double ConstraintL2LAngle::error()
     return scale * atan2(y2,x2);
 }
 
-double ConstraintL2LAngle::grad(double *param)
+double ConstraintL2LAngle::grad(index_type param)
 {
     double deriv=0.;
-    if (param == l1p1x() || param == l1p1y() ||
-        param == l1p2x() || param == l1p2y()) {
-        double dx1 = (*l1p2x() - *l1p1x());
-        double dy1 = (*l1p2y() - *l1p1y());
+    if (param == index<l1p1x>() || param == index<l1p1y>() ||
+        param == index<l1p2x>() || param == index<l1p2y>()) {
+        double dx1 = (value<l1p2x>() - value<l1p1x>());
+        double dy1 = (value<l1p2y>() - value<l1p1y>());
         double r2 = dx1*dx1+dy1*dy1;
-        if (param == l1p1x()) deriv += -dy1/r2;
-        if (param == l1p1y()) deriv += dx1/r2;
-        if (param == l1p2x()) deriv += dy1/r2;
-        if (param == l1p2y()) deriv += -dx1/r2;
+        if (param == index<l1p1x>()) deriv += -dy1/r2;
+        if (param == index<l1p1y>()) deriv += dx1/r2;
+        if (param == index<l1p2x>()) deriv += dy1/r2;
+        if (param == index<l1p2y>()) deriv += -dx1/r2;
     }
-    if (param == l2p1x() || param == l2p1y() ||
-        param == l2p2x() || param == l2p2y()) {
-        double dx1 = (*l1p2x() - *l1p1x());
-        double dy1 = (*l1p2y() - *l1p1y());
-        double dx2 = (*l2p2x() - *l2p1x());
-        double dy2 = (*l2p2y() - *l2p1y());
-        double a = atan2(dy1,dx1) + *angle();
+    if (param == index<l2p1x>() || param == index<l2p1y>() ||
+        param == index<l2p2x>() || param == index<l2p2y>()) {
+        double dx1 = (value<l1p2x>() - value<l1p1x>());
+        double dy1 = (value<l1p2y>() - value<l1p1y>());
+        double dx2 = (value<l2p2x>() - value<l2p1x>());
+        double dy2 = (value<l2p2y>() - value<l2p1y>());
+        double a = atan2(dy1,dx1) + value<angle>();
         double ca = cos(a);
         double sa = sin(a);
         double x2 = dx2*ca + dy2*sa;
@@ -746,22 +678,21 @@ double ConstraintL2LAngle::grad(double *param)
         double r2 = dx2*dx2+dy2*dy2;
         dx2 = -y2/r2;
         dy2 = x2/r2;
-        if (param == l2p1x()) deriv += (-ca*dx2 + sa*dy2);
-        if (param == l2p1y()) deriv += (-sa*dx2 - ca*dy2);
-        if (param == l2p2x()) deriv += ( ca*dx2 - sa*dy2);
-        if (param == l2p2y()) deriv += ( sa*dx2 + ca*dy2);
+        if (param == index<l2p1x>()) deriv += (-ca*dx2 + sa*dy2);
+        if (param == index<l2p1y>()) deriv += (-sa*dx2 - ca*dy2);
+        if (param == index<l2p2x>()) deriv += ( ca*dx2 - sa*dy2);
+        if (param == index<l2p2y>()) deriv += ( sa*dx2 + ca*dy2);
     }
-    if (param == angle()) deriv += -1;
+    if (param == index<angle>()) deriv += -1;
 
     return scale * deriv;
 }
 
-double ConstraintL2LAngle::maxStep(MAP_pD_D &dir, double lim)
+double ConstraintL2LAngle::maxStep( const std::vector<double>& dir, double lim)
 {
-    // step(angle()) <= pi/18 = 10°
-    MAP_pD_D::iterator it = dir.find(angle());
-    if (it != dir.end()) {
-        double step = std::abs(it->second);
+    // step(value_angle()) <= pi/18 = 10°
+    if( is_dependent<angle>() ) {
+        double step = std::abs( dir[ index<angle>() ]);
         if (step > M_PI/18.)
             lim = std::min(lim, (M_PI/18.) / step);
     }
@@ -769,37 +700,23 @@ double ConstraintL2LAngle::maxStep(MAP_pD_D &dir, double lim)
 }
 
 // MidpointOnLine
-ConstraintMidpointOnLine::ConstraintMidpointOnLine(Line &l1, Line &l2)
-{
-    pvec.push_back(l1.p1.x);
-    pvec.push_back(l1.p1.y);
-    pvec.push_back(l1.p2.x);
-    pvec.push_back(l1.p2.y);
-    pvec.push_back(l2.p1.x);
-    pvec.push_back(l2.p1.y);
-    pvec.push_back(l2.p2.x);
-    pvec.push_back(l2.p2.y);
-    origpvec = pvec;
-    rescale();
+ConstraintMidpointOnLine::ConstraintMidpointOnLine(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
 }
 
-ConstraintMidpointOnLine::ConstraintMidpointOnLine(Point &l1p1, Point &l1p2, Point &l2p1, Point &l2p2)
-{
-    pvec.push_back(l1p1.x);
-    pvec.push_back(l1p1.y);
-    pvec.push_back(l1p2.x);
-    pvec.push_back(l1p2.y);
-    pvec.push_back(l2p1.x);
-    pvec.push_back(l2p1.y);
-    pvec.push_back(l2p2.x);
-    pvec.push_back(l2p2.y);
-    origpvec = pvec;
-    rescale();
-}
-
-ConstraintType ConstraintMidpointOnLine::getTypeId()
+ConstraintType ConstraintMidpointOnLine::getTypeId() const
 {
     return MidpointOnLine;
+}
+
+Constraint* ConstraintMidpointOnLine::clone() const
+{
+    return new ConstraintMidpointOnLine(*this);
 }
 
 void ConstraintMidpointOnLine::rescale(double coef)
@@ -809,10 +726,10 @@ void ConstraintMidpointOnLine::rescale(double coef)
 
 double ConstraintMidpointOnLine::error()
 {
-    double x0=((*l1p1x())+(*l1p2x()))/2;
-    double y0=((*l1p1y())+(*l1p2y()))/2;
-    double x1=*l2p1x(), x2=*l2p2x();
-    double y1=*l2p1y(), y2=*l2p2y();
+    double x0=( value<l1p1x>() + value<l1p2x>() )/2;
+    double y0=( value<l1p1y>() + value<l1p2y>() )/2;
+    double x1= value<l2p1x>(), x2= value<l2p2x>();
+    double y1= value<l2p1y>(), y2= value<l2p2y>();
     double dx = x2-x1;
     double dy = y2-y1;
     double d = sqrt(dx*dx+dy*dy);
@@ -820,55 +737,58 @@ double ConstraintMidpointOnLine::error()
     return scale * area/d;
 }
 
-double ConstraintMidpointOnLine::grad(double *param)
+double ConstraintMidpointOnLine::grad(index_type param)
 {
     double deriv=0.;
     // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
     // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
     // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
-    if (param == l1p1x() || param == l1p1y() ||
-        param == l1p2x() || param == l1p2y()||
-        param == l2p1x() || param == l2p1y() ||
-        param == l2p2x() || param == l2p2y()) {
-        double x0=((*l1p1x())+(*l1p2x()))/2;
-        double y0=((*l1p1y())+(*l1p2y()))/2;
-        double x1=*l2p1x(), x2=*l2p2x();
-        double y1=*l2p1y(), y2=*l2p2y();
+    if (param == index<l1p1x>() || param == index<l1p1y>() ||
+        param == index<l1p2x>() || param == index<l1p2y>()||
+        param == index<l2p1x>() || param == index<l2p1y>() ||
+        param == index<l2p2x>() || param == index<l2p2y>()) {
+        double x0=((value<l1p1x>())+(value<l1p2x>()))/2;
+        double y0=((value<l1p1y>())+(value<l1p2y>()))/2;
+        double x1=value<l2p1x>(), x2=value<l2p2x>();
+        double y1=value<l2p1y>(), y2=value<l2p2y>();
         double dx = x2-x1;
         double dy = y2-y1;
         double d2 = dx*dx+dy*dy;
         double d = sqrt(d2);
         double area = -x0*dy+y0*dx+x1*y2-x2*y1;
-        if (param == l1p1x()) deriv += (y1-y2) / (2*d);
-        if (param == l1p1y()) deriv += (x2-x1) / (2*d);
-        if (param == l1p2x()) deriv += (y1-y2) / (2*d);
-        if (param == l1p2y()) deriv += (x2-x1) / (2*d);
-        if (param == l2p1x()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
-        if (param == l2p1y()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
-        if (param == l2p2x()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
-        if (param == l2p2y()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
+        if (param == index<l1p1x>()) deriv += (y1-y2) / (2*d);
+        if (param == index<l1p1y>()) deriv += (x2-x1) / (2*d);
+        if (param == index<l1p2x>()) deriv += (y1-y2) / (2*d);
+        if (param == index<l1p2y>()) deriv += (x2-x1) / (2*d);
+        if (param == index<l2p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
+        if (param == index<l2p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
+        if (param == index<l2p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
+        if (param == index<l2p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
     }
     return scale * deriv;
 }
 
 // TangentCircumf
-ConstraintTangentCircumf::ConstraintTangentCircumf(Point &p1, Point &p2,
-                                                   double *rad1, double *rad2, bool internal_)
-{
-    internal = internal_;
-    pvec.push_back(p1.x);
-    pvec.push_back(p1.y);
-    pvec.push_back(p2.x);
-    pvec.push_back(p2.y);
-    pvec.push_back(rad1);
-    pvec.push_back(rad2);
-    origpvec = pvec;
-    rescale();
+ConstraintTangentCircumf::ConstraintTangentCircumf(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef,
+		bool internal_
+):Constraint( paramenters, indices, dependent_var_count ),
+		internal(internal_){
+//    internal = internal_;
+    rescale(scale_coef);
 }
 
-ConstraintType ConstraintTangentCircumf::getTypeId()
+ConstraintType ConstraintTangentCircumf::getTypeId() const
 {
     return TangentCircumf;
+}
+
+Constraint* ConstraintTangentCircumf::clone() const
+{
+    return new ConstraintTangentCircumf(*this);
 }
 
 void ConstraintTangentCircumf::rescale(double coef)
@@ -878,34 +798,34 @@ void ConstraintTangentCircumf::rescale(double coef)
 
 double ConstraintTangentCircumf::error()
 {
-    double dx = (*c1x() - *c2x());
-    double dy = (*c1y() - *c2y());
+    double dx = (value<c1x>() - value<c2x>());
+    double dy = (value<c1y>() - value<c2y>());
     if (internal)
-        return scale * (sqrt(dx*dx + dy*dy) - std::abs(*r1() - *r2()));
+        return scale * (sqrt(dx*dx + dy*dy) - std::abs( value<r1>() - value<r2>() ));
     else
-        return scale * (sqrt(dx*dx + dy*dy) - (*r1() + *r2()));
+        return scale * (sqrt(dx*dx + dy*dy) - ( value<r1>() + value<r2>() ));
 }
 
-double ConstraintTangentCircumf::grad(double *param)
+double ConstraintTangentCircumf::grad( index_type param )
 {
     double deriv=0.;
-    if (param == c1x() || param == c1y() ||
-        param == c2x() || param == c2y()||
-        param == r1() || param == r2()) {
-        double dx = (*c1x() - *c2x());
-        double dy = (*c1y() - *c2y());
+    if (param == index<c1x>() || param == index<c1y>() ||
+        param == index<c2x>() || param == index<c2y>()||
+        param == index<r1>() || param == index<r2>()) {
+        double dx = (value<c1x>() - value<c2x>());
+        double dy = (value<c1y>() - value<c2y>());
         double d = sqrt(dx*dx + dy*dy);
-        if (param == c1x()) deriv += dx/d;
-        if (param == c1y()) deriv += dy/d;
-        if (param == c2x()) deriv += -dx/d;
-        if (param == c2y()) deriv += -dy/d;
+        if (param == index<c1x>()) deriv += dx/d;
+        if (param == index<c1y>()) deriv += dy/d;
+        if (param == index<c2x>()) deriv += -dx/d;
+        if (param == index<c2y>()) deriv += -dy/d;
         if (internal) {
-            if (param == r1()) deriv += (*r1() > *r2()) ? -1 : 1;
-            if (param == r2()) deriv += (*r1() > *r2()) ? 1 : -1;
+            if (param == index<r1>()) deriv += (value<r1>() > value<r2>()) ? -1 : 1;
+            if (param == index<r2>()) deriv += (value<r1>() > value<r2>()) ? 1 : -1;
         }
         else {
-            if (param == r1()) deriv += -1;
-            if (param == r2()) deriv += -1;
+            if (param == index<r1>()) deriv += -1;
+            if (param == index<r2>()) deriv += -1;
         }
     }
     return scale * deriv;

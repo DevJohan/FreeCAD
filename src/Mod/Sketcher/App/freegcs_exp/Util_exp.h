@@ -38,6 +38,8 @@ namespace GCS_EXP
     typedef std::set<double *> SET_pD;
     typedef std::set<int> SET_I;
 
+	typedef index_type variable_index_type;
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif

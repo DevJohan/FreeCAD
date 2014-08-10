@@ -49,10 +49,10 @@ namespace GCS_EXP
     class Arc
     {
     public:
-        Arc(){startAngle=0;endAngle=0;rad=0;}
+        Arc(){startAngle=0;endAngle=0;radius=0;}
         double *startAngle;
         double *endAngle;
-        double *rad;
+        double *radius;
         Point start;
         Point end;
         Point center;
@@ -61,9 +61,64 @@ namespace GCS_EXP
     class Circle
     {
     public:
-        Circle(){rad = 0;}
+        Circle(){radius = 0;}
         Point center;
-        double *rad;
+        double *radius;
+    };
+
+
+    ///////////////////////////////////////
+    // Geometries info
+    ///////////////////////////////////////
+    typedef int index_type;
+
+    class PointInfo
+    {
+    public:
+    	PointInfo(index_type x_i=0, index_type y_i=0):x_index(x_i),y_index(y_i){}
+    	index_type x_index;
+    	index_type y_index;
+    };
+
+    class LineInfo
+    {
+    public:
+    	LineInfo(PointInfo pa, PointInfo pb):p1(pa),p2(pb){}
+    	PointInfo p1;
+    	PointInfo p2;
+    };
+
+    class ArcInfo
+    {
+    public:
+    	ArcInfo(	index_type startAngle,
+    			index_type endAngle,
+    			index_type rad,
+    			PointInfo start,
+    			PointInfo end,
+    			PointInfo center
+    	):
+    		startAngle(startAngle),
+    		endAngle(endAngle),
+    		rad(rad),
+    		start(start),
+    		end(end),
+    		center(center)
+    	{}
+    	index_type startAngle;
+    	index_type endAngle;
+    	index_type rad;
+    	PointInfo start;
+    	PointInfo end;
+    	PointInfo center;
+    };
+
+    class CircleInfo
+    {
+    public:
+    	CircleInfo(PointInfo c_in, index_type ra):center(c_in),radius(ra){ }
+    	PointInfo center;
+    	index_type radius;
     };
 
 } //namespace GCS_EXP
