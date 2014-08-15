@@ -44,13 +44,32 @@ ConstraintType ConstraintInfo::getTypeId() const
     return None;
 }
 
+bool ConstraintInfo::operator< ( const ConstraintInfo& other ) const{
+	ConstraintType typeId = getTypeId();
+	ConstraintType typeIdOther = other.getTypeId();
+	if( typeId < typeIdOther )
+		return true;
+	else if( typeIdOther < typeId )
+		return false;
+
+	assert( variables.size() == other.variables.size() );
+	for( int i = 0; i < variables.size(); ++i ){
+		if( variables[i] < other.variables[i] )
+			return true;
+		else if( other.variables[i] < variables[i] )
+			return false;
+	}
+	return false;
+}
+
 // EqualInfo
 ConstraintInfoEqual::ConstraintInfoEqual(
 		double* const p1,
 		double* const p2
 ):ConstraintInfo(){
-    variables.push_back(p1);
-    variables.push_back(p2);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::param1 ] = p1;
+    variables[ ConstraintVariables::param2 ] = p2;
 }
 
 Constraint* ConstraintInfoEqual::createConstraint(SubSystem& subsys) const{
@@ -78,9 +97,10 @@ ConstraintInfoDifference::ConstraintInfoDifference(
 		double* const p2,
 		double* const d
 ):ConstraintInfo(){
-    variables.push_back(p1);
-    variables.push_back(p2);
-    variables.push_back(d);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::param1 ] = p1;
+    variables[ ConstraintVariables::param2 ] = p2;
+    variables[ ConstraintVariables::difference ] = d;
 }
 
 Constraint* ConstraintInfoDifference::createConstraint(SubSystem& subsys) const{
@@ -105,11 +125,12 @@ ConstraintInfoP2PDistance::ConstraintInfoP2PDistance(
 		const Point &p2,
 		double* const d
 ):ConstraintInfo(){
-    variables.push_back(p1.x);
-    variables.push_back(p1.y);
-    variables.push_back(p2.x);
-    variables.push_back(p2.y);
-    variables.push_back(d);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = p1.x;
+    variables[ ConstraintVariables::p1y ] = p1.y;
+    variables[ ConstraintVariables::p2x ] = p2.x;
+    variables[ ConstraintVariables::p2y ] = p2.y;
+    variables[ ConstraintVariables::distance ] = d;
 }
 
 Constraint* ConstraintInfoP2PDistance::createConstraint(SubSystem& subsys) const{
@@ -137,11 +158,12 @@ ConstraintInfoP2PAngle::ConstraintInfoP2PAngle(
 		double* const a,
 		double da_
 ):ConstraintInfo(), da(da_){
-    variables.push_back(p1.x);
-    variables.push_back(p1.y);
-    variables.push_back(p2.x);
-    variables.push_back(p2.y);
-    variables.push_back(a);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = p1.x;
+    variables[ ConstraintVariables::p1y ] = p1.y;
+    variables[ ConstraintVariables::p2x ] = p2.x;
+    variables[ ConstraintVariables::p2y ] = p2.y;
+    variables[ ConstraintVariables::angle ] = a;
 }
 
 Constraint* ConstraintInfoP2PAngle::createConstraint(SubSystem& subsys) const{
@@ -170,13 +192,14 @@ ConstraintInfoP2LDistance::ConstraintInfoP2LDistance(
 		const Line &l,
 		double* const d
 ):ConstraintInfo(){
-    variables.push_back(p.x);
-    variables.push_back(p.y);
-    variables.push_back(l.p1.x);
-    variables.push_back(l.p1.y);
-    variables.push_back(l.p2.x);
-    variables.push_back(l.p2.y);
-    variables.push_back(d);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::px ] = p.x;
+    variables[ ConstraintVariables::py ] = p.y;
+    variables[ ConstraintVariables::l_p1x ] = l.p1.x;
+    variables[ ConstraintVariables::l_p1y ] = l.p1.y;
+    variables[ ConstraintVariables::l_p2x ] = l.p2.x;
+    variables[ ConstraintVariables::l_p2y ] = l.p2.y;
+    variables[ ConstraintVariables::distance ] = d;
 }
 
 Constraint* ConstraintInfoP2LDistance::createConstraint(SubSystem& subsys) const{
@@ -202,12 +225,13 @@ ConstraintInfoPointOnLine::ConstraintInfoPointOnLine(
 		const Point &p,
 		const Line &l
 ):ConstraintInfo(){
-    variables.push_back(p.x);
-    variables.push_back(p.y);
-    variables.push_back(l.p1.x);
-    variables.push_back(l.p1.y);
-    variables.push_back(l.p2.x);
-    variables.push_back(l.p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::px ] = p.x;
+    variables[ ConstraintVariables::py ] = p.y;
+    variables[ ConstraintVariables::l_p1x ] = l.p1.x;
+    variables[ ConstraintVariables::l_p1y ] = l.p1.y;
+    variables[ ConstraintVariables::l_p2x ] = l.p2.x;
+    variables[ ConstraintVariables::l_p2y ] = l.p2.y;
 }
 
 ConstraintInfoPointOnLine::ConstraintInfoPointOnLine(
@@ -215,12 +239,13 @@ ConstraintInfoPointOnLine::ConstraintInfoPointOnLine(
 		const Point &lp1,
 		const Point &lp2
 ):ConstraintInfo(){
-    variables.push_back(p.x);
-    variables.push_back(p.y);
-    variables.push_back(lp1.x);
-    variables.push_back(lp1.y);
-    variables.push_back(lp2.x);
-    variables.push_back(lp2.y);
+	variables.resize(variable_count);
+    variables[ ConstraintVariables::px ] = p.x;
+    variables[ ConstraintVariables::py ] = p.y;
+    variables[ ConstraintVariables::l_p1x ] = lp1.x;
+    variables[ ConstraintVariables::l_p1y ] = lp1.y;
+    variables[ ConstraintVariables::l_p2x ] = lp2.x;
+    variables[ ConstraintVariables::l_p2y ] = lp2.y;
 }
 
 Constraint* ConstraintInfoPointOnLine::createConstraint(SubSystem& subsys) const{
@@ -245,12 +270,13 @@ ConstraintInfoPointOnPerpBisector::ConstraintInfoPointOnPerpBisector(
 		const Point &p,
 		const Line &l
 ):ConstraintInfo(){
-    variables.push_back(p.x);
-    variables.push_back(p.y);
-    variables.push_back(l.p1.x);
-    variables.push_back(l.p1.y);
-    variables.push_back(l.p2.x);
-    variables.push_back(l.p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p0x ] = p.x;
+    variables[ ConstraintVariables::p0y ] = p.y;
+    variables[ ConstraintVariables::p1x ] = l.p1.x;
+    variables[ ConstraintVariables::p1y ] = l.p1.y;
+    variables[ ConstraintVariables::p2x ] = l.p2.x;
+    variables[ ConstraintVariables::p2y ] = l.p2.y;
 }
 
 ConstraintInfoPointOnPerpBisector::ConstraintInfoPointOnPerpBisector(
@@ -258,12 +284,13 @@ ConstraintInfoPointOnPerpBisector::ConstraintInfoPointOnPerpBisector(
 		const Point &lp1,
 		const Point &lp2
 ):ConstraintInfo(){
-    variables.push_back(p.x);
-    variables.push_back(p.y);
-    variables.push_back(lp1.x);
-    variables.push_back(lp1.y);
-    variables.push_back(lp2.x);
-    variables.push_back(lp2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p0x ] = p.x;
+    variables[ ConstraintVariables::p0y ] = p.y;
+    variables[ ConstraintVariables::p1x ] = lp1.x;
+    variables[ ConstraintVariables::p1y ] = lp1.y;
+    variables[ ConstraintVariables::p2x ] = lp2.x;
+    variables[ ConstraintVariables::p2y ] = lp2.y;
 }
 
 Constraint* ConstraintInfoPointOnPerpBisector::createConstraint(SubSystem& subsys) const{
@@ -288,14 +315,15 @@ ConstraintInfoParallel::ConstraintInfoParallel(
 		const Line &l1,
 		const Line &l2
 ):ConstraintInfo(){
-    variables.push_back(l1.p1.x);
-    variables.push_back(l1.p1.y);
-    variables.push_back(l1.p2.x);
-    variables.push_back(l1.p2.y);
-    variables.push_back(l2.p1.x);
-    variables.push_back(l2.p1.y);
-    variables.push_back(l2.p2.x);
-    variables.push_back(l2.p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1.p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1.p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1.p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1.p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2.p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2.p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2.p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2.p2.y;
 }
 
 Constraint* ConstraintInfoParallel::createConstraint(SubSystem& subsys) const{
@@ -320,14 +348,15 @@ ConstraintInfoPerpendicular::ConstraintInfoPerpendicular(
 		const Line &l1,
 		const Line &l2
 ):ConstraintInfo(){
-    variables.push_back(l1.p1.x);
-    variables.push_back(l1.p1.y);
-    variables.push_back(l1.p2.x);
-    variables.push_back(l1.p2.y);
-    variables.push_back(l2.p1.x);
-    variables.push_back(l2.p1.y);
-    variables.push_back(l2.p2.x);
-    variables.push_back(l2.p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1.p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1.p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1.p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1.p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2.p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2.p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2.p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2.p2.y;
 }
 
 
@@ -337,14 +366,15 @@ ConstraintInfoPerpendicular::ConstraintInfoPerpendicular(
 		const Point &l2p1,
 		const Point &l2p2
 ):ConstraintInfo(){
-    variables.push_back(l1p1.x);
-    variables.push_back(l1p1.y);
-    variables.push_back(l1p2.x);
-    variables.push_back(l1p2.y);
-    variables.push_back(l2p1.x);
-    variables.push_back(l2p1.y);
-    variables.push_back(l2p2.x);
-    variables.push_back(l2p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2p2.y;
 }
 
 Constraint* ConstraintInfoPerpendicular::createConstraint(SubSystem& subsys) const{
@@ -371,15 +401,16 @@ ConstraintInfoL2LAngle::ConstraintInfoL2LAngle(
 		const Line &l2,
 		double* const a
 ):ConstraintInfo(){
-    variables.push_back(l1.p1.x);
-    variables.push_back(l1.p1.y);
-    variables.push_back(l1.p2.x);
-    variables.push_back(l1.p2.y);
-    variables.push_back(l2.p1.x);
-    variables.push_back(l2.p1.y);
-    variables.push_back(l2.p2.x);
-    variables.push_back(l2.p2.y);
-    variables.push_back(a);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1.p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1.p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1.p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1.p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2.p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2.p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2.p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2.p2.y;
+    variables[ ConstraintVariables::angle ] = a;
 }
 
 ConstraintInfoL2LAngle::ConstraintInfoL2LAngle(
@@ -389,15 +420,16 @@ ConstraintInfoL2LAngle::ConstraintInfoL2LAngle(
 		const Point &l2p2,
 		double* const a
 ):ConstraintInfo(){
-    variables.push_back(l1p1.x);
-    variables.push_back(l1p1.y);
-    variables.push_back(l1p2.x);
-    variables.push_back(l1p2.y);
-    variables.push_back(l2p1.x);
-    variables.push_back(l2p1.y);
-    variables.push_back(l2p2.x);
-    variables.push_back(l2p2.y);
-    variables.push_back(a);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2p2.y;
+    variables[ ConstraintVariables::angle ] = a;
 }
 
 Constraint* ConstraintInfoL2LAngle::createConstraint(SubSystem& subsys) const{
@@ -424,14 +456,15 @@ ConstraintInfoMidpointOnLine::ConstraintInfoMidpointOnLine(
 		const Line &l1,
 		const Line &l2
 ):ConstraintInfo(){
-    variables.push_back(l1.p1.x);
-    variables.push_back(l1.p1.y);
-    variables.push_back(l1.p2.x);
-    variables.push_back(l1.p2.y);
-    variables.push_back(l2.p1.x);
-    variables.push_back(l2.p1.y);
-    variables.push_back(l2.p2.x);
-    variables.push_back(l2.p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1.p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1.p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1.p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1.p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2.p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2.p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2.p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2.p2.y;
 }
 
 ConstraintInfoMidpointOnLine::ConstraintInfoMidpointOnLine(
@@ -440,14 +473,15 @@ ConstraintInfoMidpointOnLine::ConstraintInfoMidpointOnLine(
 		const Point &l2p1,
 		const Point &l2p2
 ):ConstraintInfo(){
-    variables.push_back(l1p1.x);
-    variables.push_back(l1p1.y);
-    variables.push_back(l1p2.x);
-    variables.push_back(l1p2.y);
-    variables.push_back(l2p1.x);
-    variables.push_back(l2p1.y);
-    variables.push_back(l2p2.x);
-    variables.push_back(l2p2.y);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::l1p1x ] = l1p1.x;
+    variables[ ConstraintVariables::l1p1y ] = l1p1.y;
+    variables[ ConstraintVariables::l1p2x ] = l1p2.x;
+    variables[ ConstraintVariables::l1p2y ] = l1p2.y;
+    variables[ ConstraintVariables::l2p1x ] = l2p1.x;
+    variables[ ConstraintVariables::l2p1y ] = l2p1.y;
+    variables[ ConstraintVariables::l2p2x ] = l2p2.x;
+    variables[ ConstraintVariables::l2p2y ] = l2p2.y;
 }
 
 Constraint* ConstraintInfoMidpointOnLine::createConstraint(SubSystem& subsys) const{
@@ -476,12 +510,13 @@ ConstraintInfoTangentCircumf::ConstraintInfoTangentCircumf(
 		double* const rad2,
 		bool internal_
 ):ConstraintInfo(), internal(internal_){
-    variables.push_back(p1.x);
-    variables.push_back(p1.y);
-    variables.push_back(p2.x);
-    variables.push_back(p2.y);
-    variables.push_back(rad1);
-    variables.push_back(rad2);
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::c1x ] = p1.x;
+    variables[ ConstraintVariables::c1y ] = p1.y;
+    variables[ ConstraintVariables::c2x ] = p2.x;
+    variables[ ConstraintVariables::c2y ] = p2.y;
+    variables[ ConstraintVariables::r1 ] = rad1;
+    variables[ ConstraintVariables::r2 ] = rad2;
 }
 
 Constraint* ConstraintInfoTangentCircumf::createConstraint(SubSystem& subsys) const{

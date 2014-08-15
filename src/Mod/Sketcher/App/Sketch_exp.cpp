@@ -106,21 +106,22 @@ int Sketch_exp::setUpSketch(const std::vector<Part::Geometry *> &GeoList,
     clear();
 
     std::vector<Part::Geometry *> intGeoList, extGeoList;
-    for (int i=0; i < int(GeoList.size())-extGeoCount; i++)
+    const int internalConstraintCount = GeoList.size()-extGeoCount;
+    for( int i = 0; i < internalConstraintCount; i++)
         intGeoList.push_back(GeoList[i]);
-    for (int i=int(GeoList.size())-extGeoCount; i < int(GeoList.size()); i++)
+    for( int i = internalConstraintCount; i < int(GeoList.size()); i++)
         extGeoList.push_back(GeoList[i]);
 
     addGeometry(intGeoList);
-    int extStart=Geoms.size();
+    int extStart = Geoms.size();
     addGeometry(extGeoList, true);
-    int extEnd=Geoms.size()-1;
-    for (int i=extStart; i <= extEnd; i++)
+    int extEnd = Geoms.size()-1;
+    for( int i = extStart; i <= extEnd; i++)
         Geoms[i].external = true;
 
     // The Geoms list might be empty after an undo/redo
-    if (!Geoms.empty())
-        addConstraints(ConstraintList);
+    if( !Geoms.empty() )
+        addConstraints( ConstraintList );
 
     GCSsys.clearByTag(-1);
     GCSsys.declareUnknowns( DependentVariables );
@@ -440,12 +441,13 @@ int Sketch_exp::checkGeoId(int geoId)
 
 // constraint adding ==========================================================
 
-int Sketch_exp::addConstraint(const Constraint *constraint)
+int Sketch_exp::addConstraint(const Constraint* constraint )
 {
     // constraints on nothing makes no sense
-    assert(int(Geoms.size()) > 0);
+    assert( int(Geoms.size()) > 0 );
+
     int rtn = -1;
-    switch (constraint->Type) {
+    switch ( constraint->Type ) {
     case DistanceX:
         if (constraint->FirstPos == none) // horizontal length of a line
             rtn = addDistanceXConstraint(constraint->First,constraint->Value);
@@ -556,13 +558,14 @@ int Sketch_exp::addConstraint(const Constraint *constraint)
     return rtn;
 }
 
-int Sketch_exp::addConstraints(const std::vector<Constraint *> &ConstraintList)
+int Sketch_exp::addConstraints( const std::vector<Constraint *> &ConstraintList )
 {
     // constraints on nothing makes no sense
     assert(!Geoms.empty() || ConstraintList.empty());
 
     int rtn = -1;
-    for (std::vector<Constraint *>::const_iterator it = ConstraintList.begin();it!=ConstraintList.end();++it)
+    for( std::vector<Constraint *>::const_iterator it = ConstraintList.begin();
+    		it != ConstraintList.end(); ++it )
         rtn = addConstraint (*it);
 
     return rtn;
@@ -574,7 +577,7 @@ int Sketch_exp::addCoordinateXConstraint(int geoId, PointPos pos, double value)
 
     int pointId = getPointId(geoId, pos);
 
-    if (pointId >= 0 && pointId < int(Points.size())) {
+    if( pointId >= 0 && pointId < int(Points.size()) ){
         double *val = new double(value);
         FixedVariables.push_back(val);
         GCS_EXP::Point &p = Points[pointId];
@@ -591,12 +594,12 @@ int Sketch_exp::addCoordinateYConstraint(int geoId, PointPos pos, double value)
 
     int pointId = getPointId(geoId, pos);
 
-    if (pointId >= 0 && pointId < int(Points.size())) {
+    if( pointId >= 0 && pointId < int(Points.size()) ){
         double *val = new double(value);
         FixedVariables.push_back(val);
         GCS_EXP::Point &p = Points[pointId];
         int tag = ++ConstraintsCounter;
-        GCSsys.addConstraintCoordinateY(p, val, tag);
+        GCSsys.addConstraintCoordinateY( p, val, tag );
         return ConstraintsCounter;
     }
     return -1;
@@ -615,7 +618,7 @@ int Sketch_exp::addDistanceXConstraint(int geoId, double value)
     double *diff = FixedVariables[FixedVariables.size()-1];
 
     int tag = ++ConstraintsCounter;
-    GCSsys.addConstraintDifference(l.p1.x, l.p2.x, diff, tag);
+    GCSsys.addConstraintDifference( l.p1.x, l.p2.x, diff, tag );
     return ConstraintsCounter;
 }
 

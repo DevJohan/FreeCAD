@@ -98,14 +98,17 @@ void SubSystem::addConstraints( const std::vector<ConstraintInfo *>& c_info_list
 
 void SubSystem::initialize()
 {
-    for (std::vector<Constraint *>::iterator constr = constraints_list.begin();
-    		constr != constraints_list.end(); ++constr) {
-    	std::vector<variable_index_type> constr_params = (*constr)->params();
-    	for(std::vector<variable_index_type>::iterator param_it = constr_params.begin();
-    			param_it != constr_params.end();++param_it){
-    		p2c[ *param_it ].push_back( *constr );
-    	}
-    }
+//	p2c.resize( dependent_variable_count );
+//    for (std::vector<Constraint *>::iterator constr = constraints_list.begin();
+//    		constr != constraints_list.end(); ++constr) {
+//    	std::vector<variable_index_type> constr_params = (*constr)->indices();
+//    	for(std::vector<variable_index_type>::iterator param_it = constr_params.begin();
+//    			param_it != constr_params.end(); ++param_it ){
+//    		const variable_index_type index = *param_it;
+//    		if( isDependentVariable( index ) )
+//    			p2c[ index ].push_back( std::distance(constraints_list.begin(), constr) );
+//    	}
+//    }
 }
 
 
@@ -117,7 +120,17 @@ std::vector<variable_index_type> SubSystem::getIndices(
 			var_it != original_variables.end(); ++var_it ){
 		variable_indices.push_back( getIndex(*var_it) );
 	}
+	assert( variable_indices.size() == original_variables.size() );
 	return variable_indices;
+}
+
+void SubSystem::setReference(){
+	reference_values.assign( variables.begin(), variables.end() );
+}
+
+void SubSystem::resetToReference(){
+	assert( reference_values.size() == variables.size() );
+	variables.assign(reference_values.begin(), reference_values.end());
 }
 
 void SubSystem::getParams( Eigen::VectorXd &xOut )
@@ -166,14 +179,12 @@ double SubSystem::errorPriority()
 double SubSystem::errorAuxiliary()
 {
     double err = 0.;
-    const int end_index = priority_constraints_count;
+    const int end_index = constraints_list.size();
     for( int i = priority_constraints_count; i < end_index; ++i ){
         double tmp = constraints_list[i]->error();
         err += tmp*tmp;
     }
     err *= 0.5;
-    return err;
-   err *= 0.5;
     return err;
 }
 
@@ -202,61 +213,108 @@ void SubSystem::calcResidual(Eigen::VectorXd &r, double &err)
     err *= 0.5;
 }
 
-/*
-void SubSystem::calcJacobi()
+void SubSystem::calcResidualPriority( Eigen::VectorXd &r )
 {
-    assert(grad.size() != xsize);
+	const int prio_count = priority_constraints_count ;
+    assert( r.size() == prio_count );
 
-    for (MAP_pD_pD::const_iterator param=pmap.begin();
-         param != pmap.end(); ++param) {
-        // assert(p2c.find(param->second) != p2c.end());
-        std::vector<Constraint *> constrs=p2c[param->second];
-        for (std::vector<Constraint *>::const_iterator constr = constrs.begin();
-             constr != constrs.end(); ++constr)
-            jacobi.set(*constr,param->second,(*constr)->grad(param->second));
+    for( int i=0; i < prio_count; ++i ){
+        r[i] = constraints_list[i]->error();
     }
 }
-*/
 
-//void SubSystem::calcJacobi( std::vector<double *>& params, Eigen::MatrixXd &jacobi )
-//{
-//    jacobi.setZero(csize, params.size());
-//    for (int j=0; j < int(params.size()); j++) {
-//        MAP_pD_pD::const_iterator
-//          pmapfind = pmap.find(params[j]);
-//        if (pmapfind != pmap.end())
-//            for (int i=0; i < csize; i++)
-//                jacobi(i,j) = constraints_list[i]->grad(pmapfind->second);
-//    }
-//}
+void SubSystem::calcResidualAuxiliary( Eigen::VectorXd &r )
+{
+	const int end_constraint = constraints_list.size();
+	const int aux_count = end_constraint - priority_constraints_count;
+    assert( r.size() == aux_count );
 
-//void SubSystem::calcJacobi( Eigen::MatrixXd &jacobi )
-//{
-//    calcJacobi( dependent_variables, jacobi );
-//}
+    for( int i = priority_constraints_count; i < end_constraint; ++i ){
+        r[i] = constraints_list[i]->error();
+    }
+}
 
-//void SubSystem::calcGrad( std::vector<double *> &params, Eigen::VectorXd &grad )
-//{
-//    assert(grad.size() == int(params.size()));
-//
-//    grad.setZero();
-//    for (int j=0; j < int(params.size()); j++) {
-//        MAP_pD_pD::const_iterator
-//          pmapfind = pmap.find(params[j]);
-//        if (pmapfind != pmap.end()) {
-//            // assert(p2c.find(pmapfind->second) != p2c.end());
-//            std::vector<Constraint *> constrs = p2c[pmapfind->second];
-//            for (std::vector<Constraint *>::const_iterator constr = constrs.begin();
-//                 constr != constrs.end(); ++constr)
-//                grad[j] += (*constr)->error() * (*constr)->grad( pmapfind->second );
-//        }
-//    }
-//}
+template <typename IteratorType>
+void SubSystem::calcJacobi( IteratorType it, const IteratorType it_end, Eigen::MatrixXd &jacobi )
+{
+    typedef Constraint::grad_component_t grad_component_t;
+    typedef std::vector< Constraint* >::const_iterator constrait_iterator;
+    typedef std::vector< grad_component_t >::iterator grad_iterator;
 
-//void SubSystem::calcGrad( Eigen::VectorXd &grad )
-//{
-//    calcGrad(dependent_variables, grad);
-//}
+    std::vector< grad_component_t > gradComp;
+    int cid = 0;
+    for ( ; it != it_end; ++it, ++cid ){
+    	gradComp.clear();
+    	(*it)->grad( gradComp );
+    	for( grad_iterator comp_it = gradComp.begin();
+    			comp_it != gradComp.end(); ++comp_it )
+    	{
+    		jacobi( cid, comp_it->first ) += comp_it->second;
+    	}
+    }
+}
+
+void SubSystem::calcJacobi( Eigen::MatrixXd &jacobi )
+{
+    jacobi.setZero( constraints_list.size(), dependent_variable_count );
+    calcJacobi( constraints_list.begin(), constraints_list.end(), jacobi );
+}
+
+void SubSystem::calcJacobiPriority( Eigen::MatrixXd &jacobi )
+{
+    jacobi.setZero( priority_constraints_count, dependent_variable_count );
+	std::vector<Constraint*>::iterator it_end = constraints_list.begin();
+	std::advance( it_end, priority_constraints_count );
+	calcJacobi( constraints_list.begin(), it_end, jacobi );
+}
+
+void SubSystem::calcJacobiAuxiliary( Eigen::MatrixXd &jacobi )
+{
+    jacobi.setZero( constraints_list.size()-priority_constraints_count, dependent_variable_count );
+	std::vector<Constraint*>::iterator it = constraints_list.begin();
+	std::advance( it, priority_constraints_count );
+	calcJacobi( it, constraints_list.end(), jacobi );
+}
+
+template <typename IteratorType>
+void SubSystem::calcGrad( IteratorType it, const IteratorType it_end, Eigen::VectorXd &grad )
+{
+    typedef Constraint::grad_component_t grad_component_t;
+    typedef std::vector< Constraint* >::const_iterator constrait_iterator;
+    typedef std::vector< grad_component_t >::iterator grad_iterator;
+
+    assert( grad.size() == dependent_variable_count );
+
+    grad.setZero();
+    std::vector< grad_component_t > gradComp;
+    for ( ; it != it_end; ++it ){
+    	const double error = (*it)->error();
+    	gradComp.clear();
+    	(*it)->grad( gradComp );
+    	for( grad_iterator comp_it = gradComp.begin();
+    			comp_it != gradComp.end(); ++comp_it )
+    		grad[ comp_it->first ] += error * comp_it->second;
+    }
+}
+
+void SubSystem::calcGrad( Eigen::VectorXd &grad )
+{
+    calcGrad( constraints_list.begin(), constraints_list.end(), grad );
+}
+
+void SubSystem::calcGradPriority( Eigen::VectorXd &grad )
+{
+	std::vector<Constraint*>::iterator it_end = constraints_list.begin();
+	std::advance( it_end, priority_constraints_count );
+    calcGrad( constraints_list.begin(), it_end, grad );
+}
+
+void SubSystem::calcGradAuxiliary( Eigen::VectorXd &grad )
+{
+	std::vector<Constraint*>::iterator it = constraints_list.begin();
+	std::advance( it, priority_constraints_count );
+    calcGrad( it, constraints_list.end(), grad );
+}
 
 double SubSystem::maxStep( Eigen::VectorXd &xdir )
 {
@@ -276,12 +334,47 @@ double SubSystem::maxStep( Eigen::VectorXd &xdir )
 	return alpha;
 }
 
-//void SubSystem::applySolution()
-//{
-//    for (MAP_pD_pD::const_iterator it=pmap.begin();
-//         it != pmap.end(); ++it)
-//        *(it->first) = *(it->second);
-//}
+double SubSystem::maxStepPriority( Eigen::VectorXd &xdir )
+{
+	typedef std::vector<Constraint *>::iterator cop_iterator;
+	const int dv_count = dependent_variable_count;
+	assert( xdir.size() == dv_count );
+
+	std::vector<double> dir( dv_count );
+	for (int j=0; j < dv_count; j++) {
+		dir[j] = xdir[j];
+	}
+
+	double alpha=1e10;
+	cop_iterator constr_end = constraints_list.begin()+ priority_constraints_count;
+	for( cop_iterator constr = constraints_list.begin();
+			constr != constr_end; ++constr)
+	{
+		alpha = (*constr)->maxStep( dir, alpha );
+	}
+
+	return alpha;
+}
+
+void SubSystem::applySolution()
+{
+	typedef std::map<double*, variable_index_type>::const_iterator cpi_iter;
+	for (cpi_iter it = parameter_indices.begin();
+			it != parameter_indices.end(); ++it ){
+		if( isDependentVariable( it->second ) )
+			*(it->first) = variables[ it->second ];
+	}
+}
+
+void SubSystem::updateSystemParameters()
+{
+	typedef std::map<double*, variable_index_type>::const_iterator cpi_iter;
+	for (cpi_iter it = parameter_indices.begin();
+			it != parameter_indices.end(); ++it ){
+		if( !isDependentVariable( it->second ) )
+			variables[ it->second ] = *(it->first);
+	}
+}
 
 void SubSystem::analyse( Eigen::MatrixXd &J, Eigen::MatrixXd &ker, Eigen::MatrixXd &img )
 {
@@ -312,19 +405,20 @@ int SubSystem::diagnose()
     redundant.clear();
     conflictingTags.clear();
     redundantTags.clear();
-    Eigen::MatrixXd J(constraints_list.size(), variables.size());
-    int count=0;
-    for ( std::vector<Constraint*>::iterator constr=constraints_list.begin();
-         constr != constraints_list.end(); ++constr) {
-        if( (*constr)->getTag() >= 0) {
-            count++;
-            for (int j=0; j < int(variables.size()); j++)
-                J(count-1,j) = (*constr)->grad(j);
-        }
-    }
+    Eigen::MatrixXd jacobian;
+    calcJacobiPriority( jacobian );
+//    int count=0;
+//    for ( std::vector<Constraint*>::iterator constr=constraints_list.begin();
+//         constr != constraints_list.end(); ++constr) {
+//        if( (*constr)->getTag() >= 0) {
+//            count++;
+//            for (int j=0; j < int(variables.size()); j++)
+//                jacobian(count-1,j) = (*constr)->grad(j);
+//        }
+//    }
 
-    if( J.rows() > 0 ) {
-        Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qrJT(J.topRows(count).transpose());
+    if( jacobian.rows() > 0 ) {
+        Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qrJT( jacobian.transpose() );
         Eigen::MatrixXd Q = qrJT.matrixQ ();
         int paramsNum = qrJT.rows();
         int constrNum = qrJT.cols();
@@ -399,45 +493,45 @@ int SubSystem::diagnose()
                 }
             }
 
-            std::vector< Constraint* > clistTmp;
-            clistTmp.reserve( constraints_list.size() );
-            for ( std::vector< Constraint* >::iterator constr=constraints_list.begin();
-            		constr != constraints_list.end(); ++constr)
-            	if( skipped.count( *constr ) == 0 )
-            		clistTmp.push_back(*constr);
-
-            std::vector<variable_index_type> dependent_variables( dependent_variable_count );
-            for(int i=0; i<dependent_variable_count; i++)
-            	dependent_variables[i] = i;
-            SubSystem* subSysTmp = new SubSystem( clistTmp , dependent_variables );
-            int res = subSysTmp->solve();
-            if ( res == Success ) {
-            	subSysTmp->applySolution();
-            	for( std::set<Constraint *>::const_iterator constr=skipped.begin();
-            			constr != skipped.end(); ++constr ) {
-            		double err = (*constr)->error();
-            		if( err * err < XconvergenceFine )
-            			redundant.insert( *constr );
-            	}
-            	resetToReference();
-
-            	std::vector< std::vector<Constraint *> > conflictGroupsOrig=conflictGroups;
-            	conflictGroups.clear();
-            	for( int i = conflictGroupsOrig.size()-1; i >= 0; i-- ){
-            		bool isRedundant = false;
-            		for( int j = 0; j < conflictGroupsOrig[i].size(); j++ ){
-            			if( redundant.count( conflictGroupsOrig[i][j] ) > 0 ){
-            				isRedundant = true;
-            				break;
-            			}
-            		}
-                    if( !isRedundant )
-                        conflictGroups.push_back( conflictGroupsOrig[i] );
-                    else
-                        constrNum--;
-                }
-            }
-            delete subSysTmp;
+//            std::vector< Constraint* > clistTmp;
+//            clistTmp.reserve( constraints_list.size() );
+//            for ( std::vector< Constraint* >::iterator constr=constraints_list.begin();
+//            		constr != constraints_list.end(); ++constr)
+//            	if( skipped.count( *constr ) == 0 )
+//            		clistTmp.push_back(*constr);
+//
+//            std::vector<variable_index_type> dependent_variables( dependent_variable_count );
+//            for( int i=0; i < dependent_variable_count; i++)
+//            	dependent_variables[i] = i;
+//            SubSystem* subSysTmp = new SubSystem( clistTmp , dependent_variables );
+//            int res = subSysTmp->solve();
+//            if ( res == Success ) {
+//            	subSysTmp->applySolution();
+//            	for( std::set<Constraint *>::const_iterator constr=skipped.begin();
+//            			constr != skipped.end(); ++constr ) {
+//            		double err = (*constr)->error();
+//            		if( err * err < XconvergenceFine )
+//            			redundant.insert( *constr );
+//            	}
+//            	resetToReference();
+//
+//            	std::vector< std::vector<Constraint *> > conflictGroupsOrig=conflictGroups;
+//            	conflictGroups.clear();
+//            	for( int i = conflictGroupsOrig.size()-1; i >= 0; i-- ){
+//            		bool isRedundant = false;
+//            		for( int j = 0; j < conflictGroupsOrig[i].size(); j++ ){
+//            			if( redundant.count( conflictGroupsOrig[i][j] ) > 0 ){
+//            				isRedundant = true;
+//            				break;
+//            			}
+//            		}
+//                    if( !isRedundant )
+//                        conflictGroups.push_back( conflictGroupsOrig[i] );
+//                    else
+//                        constrNum--;
+//                }
+//            }
+//            delete subSysTmp;
 
             // simplified output of conflicting tags
             std::set<index_type> conflictingTagsSet;
@@ -490,8 +584,6 @@ int SubSystem::solve_BFGS( bool isFine)
     int xsize = dependent_variable_count;
     if (xsize == 0)
         return Success;
-
-//    subsys->redirectParams();
 
     Eigen::MatrixXd D = Eigen::MatrixXd::Identity(xsize, xsize);
     Eigen::VectorXd x(xsize);
@@ -551,8 +643,6 @@ int SubSystem::solve_BFGS( bool isFine)
         h = x - h; // = x - xold
     }
 
-//    subsys->revertParams();
-
     if (err <= smallF)
         return Success;
     if (h.norm() <= convergence)
@@ -574,8 +664,6 @@ int SubSystem::solve_LM()
     Eigen::MatrixXd A(xsize, xsize);
     Eigen::VectorXd x(xsize), h(xsize), x_new(xsize), g(xsize), diag_A(xsize);
 
-//    subsys->redirectParams();
-
     subsys->getParams(x);
     subsys->calcResidual(e);
     e*=-1;
@@ -590,12 +678,11 @@ int SubSystem::solve_LM()
     for (iter=0; iter < maxIterNumber && !stop; ++iter) {
 
         // check error
-        double err=e.squaredNorm();
-        if (err <= eps) { // error is small, Success
+        double err = e.squaredNorm();
+        if( err <= eps ) { // error is small, Success
             stop = 1;
             break;
-        }
-        else if (err > divergingLim || err != err) { // check for diverging and NaN
+        }else if( err > divergingLim || err != err ){ // check for diverging and NaN
             stop = 6;
             break;
         }
@@ -611,7 +698,7 @@ int SubSystem::solve_LM()
         diag_A = A.diagonal(); // save diagonal entries so that augmentation can be later canceled
 
         // check for convergence
-        if (g_inf <= eps1) {
+        if( g_inf <= eps1 ){
             stop = 2;
             break;
         }
@@ -687,10 +774,8 @@ int SubSystem::solve_LM()
         }
     }
 
-    if (iter >= maxIterNumber)
+    if( iter >= maxIterNumber )
         stop = 5;
-
-//    subsys->revertParams();
 
     return (stop == 1) ? Success : Failed;
 }
@@ -711,8 +796,6 @@ int SubSystem::solve_DL()
     Eigen::VectorXd fx(csize), fx_new(csize);
     Eigen::MatrixXd Jx(csize, xsize), Jx_new(csize, xsize);
     Eigen::VectorXd g(xsize), h_sd(xsize), h_gn(xsize), h_dl(xsize);
-
-//    subsys->redirectParams();
 
     double err;
     subsys->getParams(x);
@@ -840,8 +923,6 @@ int SubSystem::solve_DL()
         // count this iteration and start again
         iter++;
     }
-
-//    subsys->revertParams();
 
     return (stop == 1) ? Success : Failed;
 }
