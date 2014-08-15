@@ -35,7 +35,7 @@ Constraint::Constraint(
 		const std::vector<index_type> indices,
 		index_type dependent_var_count
 ): 	variables(paramenters),
-	paramenters_indices(indices),
+	variable_indices(indices),
 	dependent_variable_count( dependent_var_count ),
 	scale(1.),
 	tag(0)
@@ -95,6 +95,13 @@ double ConstraintEqual::grad(index_type param)
     return scale * deriv;
 }
 
+void ConstraintEqual::grad( std::vector< grad_component_t >& gradVec )
+{
+	gradVec.clear();
+    dependent_insert<param1>( gradVec,  scale );
+    dependent_insert<param2>( gradVec, -scale );
+}
+
 // Difference
 ConstraintDifference::ConstraintDifference(
 		const std::vector<double>& paramenters,
@@ -132,6 +139,13 @@ double ConstraintDifference::grad(index_type param)
     if (param == index<param2>()) deriv += 1;
     if (param == index<difference>()) deriv += -1;
     return scale * deriv;
+}
+
+void ConstraintDifference::grad( std::vector< grad_component_t >& gradVec )
+{
+    dependent_insert<param1>( gradVec, -scale );
+    dependent_insert<param2>( gradVec,  scale );
+    dependent_insert<difference>( gradVec, -scale );
 }
 
 // P2PDistance
@@ -185,6 +199,24 @@ double ConstraintP2PDistance::grad(index_type param)
 
     return scale * deriv;
 }
+
+void ConstraintP2PDistance::grad( std::vector< grad_component_t >& gradVec )
+{
+    if( 	is_dependent<p1x>() || is_dependent<p1y>() ||
+    		is_dependent<p2x>() || is_dependent<p2y>()) {
+        double dx = (value<p1x>() - value<p2x>());
+        double dy = (value<p1y>() - value<p2y>());
+        double d = sqrt(dx*dx + dy*dy);
+        double hdx = scale * dx/d;
+        double hdy = scale * dy/d;
+        dependent_insert<p1x>( gradVec,  hdx );
+        dependent_insert<p1y>( gradVec,  hdy );
+        dependent_insert<p2x>( gradVec, -hdx );
+        dependent_insert<p2y>( gradVec, -hdy );
+    }
+    dependent_insert<distance>( gradVec, -scale );
+}
+
 
 double ConstraintP2PDistance::maxStep( const std::vector<double>& dir, double lim )
 {
@@ -273,6 +305,28 @@ double ConstraintP2PAngle::grad(index_type param)
     return scale * deriv;
 }
 
+void ConstraintP2PAngle::grad( std::vector< grad_component_t >& gradVec )
+{
+    if(		is_dependent<p1x>() || is_dependent<p1y>() ||
+    		is_dependent<p2x>() || is_dependent<p2y>()) {
+        double diff_x = (value<p2x>() - value<p1x>());
+        double diff_y = (value<p2y>() - value<p1y>());
+        double a = value<angle>() + da;
+        double ca = cos(a);
+        double sa = sin(a);
+        double x =  diff_x * ca + diff_y * sa;
+        double y = -diff_x * sa + diff_y * ca;
+        double r2 = diff_x*diff_x + diff_y*diff_y;
+        double dx = -y/r2;
+        double dy =  x/r2;
+        dependent_insert<p1x>( gradVec, scale * (-ca*dx + sa*dy) );
+        dependent_insert<p1y>( gradVec, scale * (-sa*dx - ca*dy) );
+        dependent_insert<p2x>( gradVec, scale * ( ca*dx - sa*dy) );
+        dependent_insert<p2y>( gradVec, scale * ( sa*dx + ca*dy) );
+    }
+    dependent_insert<angle>( gradVec, -scale );
+
+}
 double ConstraintP2PAngle::maxStep( const std::vector<double>& dir, double lim)
 {
     // step(value_angle()) <= pi/18 = 10°
@@ -349,6 +403,34 @@ double ConstraintP2LDistance::grad(index_type param)
     if (param == index<distance>()) deriv += -1;
 
     return scale * deriv;
+}
+
+void ConstraintP2LDistance::grad( std::vector< grad_component_t >& gradVec )
+{
+    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
+    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
+    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
+    if (	is_dependent<px>() 		|| is_dependent<py>() 		||
+    		is_dependent<l_p1x>() 	|| is_dependent<l_p1y>() 	||
+    		is_dependent<l_p2x>() 	|| is_dependent<l_p2y>()) 	{
+        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
+        double dx = x2-x1;
+        double dy = y2-y1;
+        double d2 = dx*dx+dy*dy;
+        double d = sqrt(d2);
+        double area = -x0*dy + y0*dx + x1*y2 - x2*y1;
+        double scale_factor = ( area < 0 ) ? -scale : scale;
+        double scale_d = scale_factor / d;
+        dependent_insert<px>( gradVec, scale_d * (y1-y2) );
+        dependent_insert<py>( gradVec, scale_d * (x2-x1) );
+        double scale_d2 = scale_factor / d2;
+        dependent_insert<l_p1x>( gradVec, scale_d2 * ((y2-y0)*d + (dx/d)*area) );
+        dependent_insert<l_p1y>( gradVec, scale_d2 * ((x0-x2)*d + (dy/d)*area) );
+        dependent_insert<l_p2x>( gradVec, scale_d2 * ((y0-y1)*d - (dx/d)*area) );
+        dependent_insert<l_p2y>( gradVec, scale_d2 * ((x1-x0)*d - (dy/d)*area) );
+    }
+    dependent_insert<distance>( gradVec, -scale );
 }
 
 double ConstraintP2LDistance::maxStep( const std::vector<double>& dir, double lim)
@@ -446,6 +528,34 @@ double ConstraintPointOnLine::grad(index_type param)
     return scale * deriv;
 }
 
+void ConstraintPointOnLine::grad( std::vector< grad_component_t >& gradVec )
+{
+    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
+    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
+    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
+    if(
+    		is_dependent<px>() 		|| is_dependent<py>() 		||
+    		is_dependent<l_p1x>() 	|| is_dependent<l_p1y>() 	||
+    		is_dependent<l_p2x>() 	|| is_dependent<l_p2y>())
+    {
+        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
+        double dx = x2-x1;
+        double dy = y2-y1;
+        double d2 = dx*dx+dy*dy;
+        double d = sqrt(d2);
+        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
+        double scale_d = scale / d;
+        dependent_insert<px>( gradVec, scale_d * (y1-y2) );
+        dependent_insert<py>( gradVec, scale_d * (x2-x1) );
+        double scale_d2 = scale / d2;
+        dependent_insert<l_p1x>( gradVec, scale_d2 * ((y2-y0)*d + (dx/d)*area) );
+        dependent_insert<l_p1y>( gradVec, scale_d2 * ((x0-x2)*d + (dy/d)*area) );
+        dependent_insert<l_p2x>( gradVec, scale_d2 * ((y0-y1)*d - (dx/d)*area) );
+        dependent_insert<l_p2y>( gradVec, scale_d2 * ((x1-x0)*d - (dy/d)*area) );
+    }
+}
+
 // PointOnPerpBisector
 ConstraintPointOnPerpBisector::ConstraintPointOnPerpBisector(
 		const std::vector<double>& paramenters,
@@ -504,6 +614,33 @@ double ConstraintPointOnPerpBisector::grad(index_type param)
     return scale * deriv;
 }
 
+void ConstraintPointOnPerpBisector::grad( std::vector< grad_component_t >& gradVec )
+{
+    if(
+    		is_dependent<p0x>() || is_dependent<p0y>() ||
+    		is_dependent<p1x>() || is_dependent<p1y>())
+    {
+        double dx1 = value<p1x>() - value<p0x>();
+        double dy1 = value<p1y>() - value<p0y>();
+        double scale_factor = scale / sqrt(dx1*dx1+dy1*dy1);
+        dependent_insert<p0x>( gradVec, -dx1 * scale_factor);
+        dependent_insert<p0y>( gradVec, -dy1 * scale_factor);
+        dependent_insert<p1x>( gradVec,  dx1 * scale_factor);
+        dependent_insert<p1y>( gradVec,  dy1 * scale_factor);
+    }
+    if (
+    		is_dependent<p0x>() || is_dependent<p0y>() ||
+    		is_dependent<p2x>() || is_dependent<p2y>())
+    {
+        double dx2 = value<p2x>() - value<p0x>();
+        double dy2 = value<p2y>() - value<p0y>();
+        double scale_factor = scale / sqrt(dx2*dx2+dy2*dy2);
+        dependent_insert<p0x>( gradVec,  dx2 * scale_factor );
+        dependent_insert<p0y>( gradVec,  dy2 * scale_factor );
+        dependent_insert<p2x>( gradVec, -dx2 * scale_factor );
+        dependent_insert<p2y>( gradVec, -dy2 * scale_factor );
+    }
+}
 // Parallel
 ConstraintParallel::ConstraintParallel(
 		const std::vector<double>& paramenters,
@@ -556,6 +693,25 @@ double ConstraintParallel::grad(index_type param)
     if (param == index<l2p2y>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
 
     return scale * deriv;
+}
+
+void ConstraintParallel::grad( std::vector< grad_component_t >& gradVec )
+{
+		double sdy2 = scale * (value<l2p1y>() - value<l2p2y>());
+		dependent_insert<l1p1x>( gradVec,  sdy2 ); // =  dy2
+		dependent_insert<l1p2x>( gradVec, -sdy2 ); // = -dy2
+
+    	double sdx2 = scale * (value<l2p1x>() - value<l2p2x>());
+    	dependent_insert<l1p1y>( gradVec, -sdx2 ); // = -dx2
+    	dependent_insert<l1p2y>( gradVec,  sdx2 ); // =  dx2
+
+    	double sdy1 = scale * (value<l1p1y>() - value<l1p2y>());
+    	dependent_insert<l2p1x>( gradVec, -sdy1 ); // = -dy1
+    	dependent_insert<l2p2x>( gradVec,  sdy1 ); // =  dy1
+
+    	double sdx1 = scale * (value<l1p1x>() - value<l1p2x>());
+    	dependent_insert<l2p1y>( gradVec,  sdx1 ); // = dx1
+    	dependent_insert<l2p2y>( gradVec, -sdx1 ); // = -dx1
 }
 
 // Perpendicular
@@ -612,6 +768,24 @@ double ConstraintPerpendicular::grad(index_type param)
     return scale * deriv;
 }
 
+void ConstraintPerpendicular::grad( std::vector< grad_component_t >& gradVec )
+{
+	double sdx2 = scale * (value<l2p1x>() - value<l2p2x>());
+    dependent_insert<l1p1x>( gradVec,  sdx2 ); // = dx2
+    dependent_insert<l1p2x>( gradVec, -sdx2 ); // = -dx2
+
+    double sdy2 = scale * (value<l2p1y>() - value<l2p2y>()); // = dy2
+	dependent_insert<l1p1y>( gradVec,  sdy2 ); // = dy2
+	dependent_insert<l1p2y>( gradVec, -sdy2 ); // = -dy2
+
+    double sdx1 = scale * (value<l1p1x>() - value<l1p2x>()); // = dx1
+    dependent_insert<l2p1x>( gradVec,  sdx1 ); // = dx1
+    dependent_insert<l2p2x>( gradVec, -sdx1 ); // = -dx1
+
+    double sdy1 = scale * (value<l1p1y>() - value<l1p2y>()); // = dy1
+    dependent_insert<l2p1y>( gradVec,  sdy1 ); // = dy1
+    dependent_insert<l2p2y>( gradVec, -sdy1 ); // = -dy1
+}
 // L2LAngle
 ConstraintL2LAngle::ConstraintL2LAngle(
 		const std::vector<double>& paramenters,
@@ -686,6 +860,43 @@ double ConstraintL2LAngle::grad(index_type param)
     if (param == index<angle>()) deriv += -1;
 
     return scale * deriv;
+}
+
+void ConstraintL2LAngle::grad( std::vector< grad_component_t >& gradVec )
+{
+    if(		is_dependent<l1p1x>() 	|| is_dependent<l1p1y>() ||
+    		is_dependent<l1p2x>() 	|| is_dependent<l1p2y>())
+    {
+        double dx1 = (value<l1p2x>() - value<l1p1x>());
+        double dy1 = (value<l1p2y>() - value<l1p1y>());
+        double r2 = dx1*dx1+dy1*dy1;
+        double scale_factor = scale / r2;
+        dependent_insert<l1p1x>( gradVec, -scale_factor * dy1 );
+        dependent_insert<l1p1y>( gradVec,  scale_factor * dx1 );
+        dependent_insert<l1p2x>( gradVec,  scale_factor * dy1 );
+        dependent_insert<l1p2y>( gradVec, -scale_factor * dx1 );
+    }
+    if(		is_dependent<l2p1x>() 	|| is_dependent<l2p1y>() ||
+    		is_dependent<l2p2x>() 	|| is_dependent<l2p2y>())
+    {
+        double diff_x1 = (value<l1p2x>() - value<l1p1x>());
+        double diff_y1 = (value<l1p2y>() - value<l1p1y>());
+        double diff_x2 = (value<l2p2x>() - value<l2p1x>());
+        double diff_y2 = (value<l2p2y>() - value<l2p1y>());
+        double a = atan2(diff_y1,diff_x1) + value<angle>();
+        double ca = cos(a);
+        double sa = sin(a);
+        double x2 =  diff_x2 * ca + diff_y2 * sa;
+        double y2 = -diff_x2 * sa + diff_y2 * ca;
+        double r2 = diff_x2*diff_x2 + diff_y2*diff_y2;
+        double dx2 = -y2/r2;
+        double dy2 =  x2/r2;
+        dependent_insert<l2p1x>( gradVec, scale * (-ca*dx2 + sa*dy2) );
+        dependent_insert<l2p1y>( gradVec, scale * (-sa*dx2 - ca*dy2) );
+        dependent_insert<l2p2x>( gradVec, scale * ( ca*dx2 - sa*dy2) );
+        dependent_insert<l2p2y>( gradVec, scale * ( sa*dx2 + ca*dy2) );
+    }
+    dependent_insert<angle>( gradVec, -scale );
 }
 
 double ConstraintL2LAngle::maxStep( const std::vector<double>& dir, double lim)
@@ -768,6 +979,42 @@ double ConstraintMidpointOnLine::grad(index_type param)
     return scale * deriv;
 }
 
+void ConstraintMidpointOnLine::grad( std::vector< grad_component_t >& gradVec )
+{
+    double deriv=0.;
+    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
+    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
+    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
+    if(
+    		is_dependent<l1p1x>() || is_dependent<l1p1y>() ||
+    		is_dependent<l1p2x>() || is_dependent<l1p2y>()||
+    		is_dependent<l2p1x>() || is_dependent<l2p1y>() ||
+    		is_dependent<l2p2x>() || is_dependent<l2p2y>())
+    {
+        double x0=((value<l1p1x>())+(value<l1p2x>()))/2;
+        double y0=((value<l1p1y>())+(value<l1p2y>()))/2;
+        double x1=value<l2p1x>(), x2=value<l2p2x>();
+        double y1=value<l2p1y>(), y2=value<l2p2y>();
+        double dx = x2-x1;
+        double dy = y2-y1;
+        double d2 = dx*dx + dy*dy;
+        double d = sqrt(d2);
+        double area = -x0*dy + y0*dx + x1*y2 - x2*y1;
+
+        double scale_d = scale / (2*d);
+        dependent_insert<l1p1x>( gradVec, scale_d * (y1-y2) );
+        dependent_insert<l1p1y>( gradVec, scale_d * (x2-x1) );
+        dependent_insert<l1p2x>( gradVec, scale_d * (y1-y2) );
+        dependent_insert<l1p2y>( gradVec, scale_d * (x2-x1) );
+
+        double scale_d2 = scale / d2;
+        dependent_insert<l2p1x>( gradVec, scale_d2 * ((y2-y0)*d + (dx/d)*area) );
+        dependent_insert<l2p1y>( gradVec, scale_d2 * ((x0-x2)*d + (dy/d)*area) );
+        dependent_insert<l2p2x>( gradVec, scale_d2 * ((y0-y1)*d - (dx/d)*area) );
+        dependent_insert<l2p2y>( gradVec, scale_d2 * ((x1-x0)*d - (dy/d)*area) );
+    }
+}
+
 // TangentCircumf
 ConstraintTangentCircumf::ConstraintTangentCircumf(
 		const std::vector<double>& paramenters,
@@ -829,6 +1076,33 @@ double ConstraintTangentCircumf::grad( index_type param )
         }
     }
     return scale * deriv;
+}
+
+void ConstraintTangentCircumf::grad( std::vector< grad_component_t >& gradVec )
+{
+    double deriv=0.;
+    if(
+    		is_dependent<c1x>() || is_dependent<c1y>() ||
+    		is_dependent<c2x>() || is_dependent<c2y>()||
+    		is_dependent<r1>() 	|| is_dependent<r2>())
+    {
+        double dx = (value<c1x>() - value<c2x>());
+        double dy = (value<c1y>() - value<c2y>());
+        double d = sqrt(dx*dx + dy*dy);
+        double scale_factor = scale / d;
+        dependent_insert<c1x>( gradVec,  scale_factor * dx);
+        dependent_insert<c1y>( gradVec,  scale_factor * dy);
+        dependent_insert<c2x>( gradVec, -scale_factor * dx);
+        dependent_insert<c2y>( gradVec, -scale_factor * dy);
+        if (internal) {
+        	dependent_insert<r1>( gradVec, (value<r1>() > value<r2>()) ? -scale :  scale );
+        	dependent_insert<r2>( gradVec, (value<r1>() > value<r2>()) ?  scale : -scale );
+        }
+        else {
+        	dependent_insert<r1>( gradVec, -scale);
+        	dependent_insert<r2>( gradVec, -scale);
+        }
+    }
 }
 
 } //namespace GCS

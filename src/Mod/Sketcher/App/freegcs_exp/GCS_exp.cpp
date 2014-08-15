@@ -30,6 +30,10 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 
+#define BaseExport
+#include <Base/Console.h>
+#include <Base/TimeInfo.h>
+
 //// http://forum.freecadweb.org/viewtopic.php?f=3&t=4651&start=40
 //namespace Eigen {
 //
@@ -195,12 +199,13 @@ void System::clearByTag(int tagId)
     for (std::vector<ConstraintInfo *>::const_iterator
          constr=constraints_list.begin(); constr != constraints_list.end(); ++constr) {
         if ((*constr)->getTag() == tagId)
-            constrvec.push_back(*constr);
+            constrvec.push_back( *constr );
     }
     for (std::vector<ConstraintInfo *>::const_iterator
-         constr=constrvec.begin(); constr != constrvec.end(); ++constr) {
+         constr = constrvec.begin(); constr != constrvec.end(); ++constr) {
         removeConstraint(*constr);
     }
+    free( constrvec );
 }
 
 int System::addConstraint( ConstraintInfo *constr )
@@ -216,18 +221,14 @@ int System::addConstraint( ConstraintInfo *constr )
 void System::removeConstraint(ConstraintInfo *constr)
 {
     std::vector<ConstraintInfo *>::iterator it;
-    it = std::find(constraints_list.begin(), constraints_list.end(), constr);
-    if (it == constraints_list.end())
+    it = std::find( constraints_list.begin(), constraints_list.end(), constr );
+    if( it == constraints_list.end() )
         return;
 
     constraints_list.erase(it);
     if (constr->getTag() >= 0)
         hasDiagnosis = false;
     clearSubSystems();
-
-    std::vector<ConstraintInfo *> constrvec;
-    constrvec.push_back(constr);
-    free(constrvec);
 }
 
 // basic constraints
@@ -836,9 +837,11 @@ void System::rescaleConstraint( int id, double coeff )
 {
     if ( id >= constraints_list.size() || id < 0 )
         return;
-    SubSystem* constraint_subsys = getSubsystem(id);
-    if ( constraint_subsys )
-    	constraint_subsys->rescaleConstraint(id,coeff);
+    constraints_list[id]->setScaleCoeff( coeff );
+
+//    SubSystem* constraint_subsys = getConstraintSubSystem(id);
+//    if ( constraint_subsys )
+//    	constraint_subsys->rescaleConstraint(id,coeff);
 }
 
 void System::declareUnknowns( std::vector<double *>& params )
@@ -862,17 +865,21 @@ void System::initSolution()
     // - Organizes the rest of constraints into two subsystems for
     //   tag ids >=0 and < 0 respectively and applies the
     //   system reduction specified in the previous step
+    Base::TimeInfo start_time;
 
     isInit = false;
     if (!hasUnknowns)
         return;
 
     // make sure dependent_variables is sorted
-    for(	var_iter last_dvar = dependent_variables.begin(),
-    		dvar = ++dependent_variables.begin();
-    		dvar != dependent_variables.end(); ++dvar)
-    {
-    	assert( *last_dvar < *dvar );
+    if( dependent_variables.size() > 1 ){
+    	for(	var_iter last_dvar = dependent_variables.begin(),
+    			dvar = ++dependent_variables.begin();
+    			dvar != dependent_variables.end(); ++dvar)
+    	{
+    		assert( *last_dvar < *dvar );
+    		last_dvar = dvar;
+    	}
     }
 
     /* partitioning into decoupled components using graph flood fill coloring.
@@ -898,11 +905,16 @@ void System::initSolution()
         }
     }
 
-    VEC_I components(boost::num_vertices(g));
+    std::vector<index_type> components(boost::num_vertices(g));
     int componentsSize = 0;
     // This performs the flood fill coloring.
     if (!components.empty())
         componentsSize = boost::connected_components(g, &components[0]);
+
+    // Save which subsystem each constraint belong to
+    constraints_to_subsystem.assign(
+    		( components.begin() + dependent_variables.size() ),
+    		components.end());
 
     // Resolve which dependent variables belongs to which subsystem
     std::vector< std::vector<double*> > plists( componentsSize );
@@ -947,6 +959,9 @@ void System::initSolution()
     }
     else
         clistR = constraints_list;
+
+    Base::TimeInfo end_time;
+    Base::Console().Message( "GCS_EXP::initSolution took %f\n",  Base::TimeInfo::diffTimeF(start_time,end_time) );
 }
 
 void System::setReference()
@@ -1061,7 +1076,7 @@ void free(std::vector<double *> &doublevec)
     doublevec.clear();
 }
 
-void free(std::vector<ConstraintInfo *> &constrvec)
+void free( std::vector<ConstraintInfo *> &constrvec )
 {
     for (std::vector<ConstraintInfo *>::iterator constr=constrvec.begin();
          constr != constrvec.end(); ++constr) {

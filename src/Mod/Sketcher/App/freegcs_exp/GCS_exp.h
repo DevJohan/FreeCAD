@@ -39,6 +39,7 @@ namespace GCS_EXP
     // about partitioning into subsystems and solution strategies
     private:
         std::vector<ConstraintInfo *> constraints_list;
+        std::vector<index_type> constraints_to_subsystem;
         /* dependent_variables is a vector rather than a set because
          * in initSolution() the distance is taken between iterators
          * which is slower in set. O(1) in vector O(n)? in set.
@@ -49,7 +50,11 @@ namespace GCS_EXP
         std::vector<SubSystem *> subSystems;
         void clearSubSystems();
 
-        SubSystem* getSubsystem(int id);
+        SubSystem* getConstraintSubSystem( int id ){
+        	if( isInit && id >= 0 && id < constraints_to_subsystem.size() )
+        		return subSystems[ constraints_to_subsystem[id]];
+        	return static_cast<SubSystem*>(0);
+        }
 
         void setReference();     // copies the current parameter values to reference
         void resetToReference(); // reverts all parameter values to the stored reference
@@ -142,6 +147,7 @@ namespace GCS_EXP
         int addConstraintEqualRadius( Arc& a1, Arc& a2, int tagId=0 );
         int addConstraintP2PSymmetric( Point& p1, Point& p2, Line& l, int tagId=0 );
         int addConstraintP2PSymmetric( Point& p1, Point& p2, Point& p, int tagId=0 );
+
         void rescaleConstraint( int id, double coeff );
 
         void declareUnknowns(std::vector<double *> &params);
@@ -149,8 +155,6 @@ namespace GCS_EXP
 
         int solve(bool isFine=true, Algorithm alg=DogLeg);
         int solve(std::vector<double *> &params, bool isFine=true, Algorithm alg=DogLeg);
-        int solve(SubSystem *subsys, bool isFine=true, Algorithm alg=DogLeg);
-        int solve(SubSystem *subsysA, SubSystem *subsysB, bool isFine=true);
 
         void applySolution();
         void undoSolution();

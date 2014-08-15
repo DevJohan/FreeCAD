@@ -56,8 +56,8 @@ enum Algorithm {
     	// map of the external variables to local variables
         std::map< double*, variable_index_type > parameter_indices;
         std::vector<Constraint *> constraints_list;
-        // variable to constraints adjacency list
-        std::map< variable_index_type, std::vector<Constraint *> > p2c;
+//        // variable to constraints adjacency list
+//        std::vector< std::vector<index_type> > p2c;
         // reference values of the variables vector
         std::vector<double> reference_values;
 
@@ -82,13 +82,28 @@ enum Algorithm {
         	return parameter_indices[ param ];
         }
 
+        bool isDependentVariable( variable_index_type i ){
+        	return ( i < dependent_variable_count );
+        }
         double& getDependentVariable( variable_index_type i ){
-        	assert( i < dependent_variable_count );
+        	assert( isDependentVariable(i) );
         	return variables[ i ];
+        }
+
+        bool isPriorityConstraint( index_type index){
+        	return index < priority_constraints_count;
+        }
+        bool isAuxiliaryConstraint( index_type index ){
+        	return index >= priority_constraints_count;
         }
 
         void addDependentVariables( const std::vector< double* >& dependent_vars );
         void addConstraints( const std::vector<ConstraintInfo *> &clist_ );
+
+        template <typename IteratorType>
+        void calcGrad( IteratorType it, const IteratorType end, Eigen::VectorXd &grad );
+        template <typename IteratorType>
+        void calcJacobi( IteratorType it, const IteratorType it_end, Eigen::MatrixXd &jacobi );
 
         int solve_BFGS( bool isFine);
         int solve_LM();
@@ -98,9 +113,6 @@ enum Algorithm {
         SubSystem( const std::vector<ConstraintInfo *>& clist_, const std::vector<double*>& dependent_variables );
         SubSystem( const std::vector<Constraint *>& clist_ , const std::vector<variable_index_type>& dep_var );
         ~SubSystem();
-
-//        void redirectParams();
-//        void revertParams();
 
         void setReference();
         void resetToReference();
@@ -146,11 +158,13 @@ enum Algorithm {
         double maxStepAuxiliary( Eigen::VectorXd &xdir);
 
         void applySolution();
+        void updateSystemParameters();
+
         void analyse(Eigen::MatrixXd &J, Eigen::MatrixXd &ker, Eigen::MatrixXd &img);
         void report();
         int diagnose();
 
-        int solve(bool isFine=true, Algorithm alg=DogLeg);
+        int solve( bool isFine = true, Algorithm alg = DogLeg );
 
         void printResidual();
     };

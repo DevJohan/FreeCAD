@@ -97,12 +97,12 @@ public:
     /** set the datum of a distance or angle constraint to a certain value and solve
       * This can cause the solving to fail!
       */
-    int setDatum(int constrId, double value);
+    int setDatum( int constrId, double value );
 
     /** initializes a point (or curve) drag by setting the current
       * sketch status as a reference
       */
-    int initMove(int geoId, PointPos pos, bool fine=true);
+    int initMove( int geoId, PointPos pos, bool fine=true );
 
     /** move this point (or curve) to a new location and solve.
       * This will introduce some additional weak constraints expressing

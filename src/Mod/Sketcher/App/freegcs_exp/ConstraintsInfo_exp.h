@@ -49,13 +49,18 @@ namespace GCS_EXP
         int getTag() const { return tag; }
         bool isPriorityConstraint() const { return tag >= 0; }
 
+        void setScaleCoeff( double coeff ){ scale_coef = coeff; }
+        double getScaleCoeff() const { return scale_coef; }
+
+        bool operator< ( const ConstraintInfo& ) const;
+
         virtual Constraint* createConstraint( SubSystem& sub_system ) const = 0;
         virtual ConstraintType getTypeId() const;
         virtual ConstraintInfo* clone() const  = 0;
     };
 
     // EqualInfo
-    class ConstraintInfoEqual : public ConstraintInfo
+    class ConstraintInfoEqual : public ConstraintInfo, protected ConstraintVariables<Equal>
     {
     public:
         ConstraintInfoEqual( double* const p1, double* const p2 );
@@ -65,7 +70,7 @@ namespace GCS_EXP
     };
 
     // DifferenceInfo
-    class ConstraintInfoDifference : public ConstraintInfo
+    class ConstraintInfoDifference : public ConstraintInfo, protected ConstraintVariables<Difference>
     {
     public:
         ConstraintInfoDifference( double* const p1, double* const p2, double* const d);
@@ -75,7 +80,7 @@ namespace GCS_EXP
     };
 
     // P2PDistanceInfo
-    class ConstraintInfoP2PDistance : public ConstraintInfo
+    class ConstraintInfoP2PDistance : public ConstraintInfo, protected ConstraintVariables<P2PDistance>
     {
     public:
         ConstraintInfoP2PDistance(const Point &p1, const Point &p2, double* const d );
@@ -85,7 +90,7 @@ namespace GCS_EXP
     };
 
     // P2PAngleInfo
-    class ConstraintInfoP2PAngle : public ConstraintInfo
+    class ConstraintInfoP2PAngle : public ConstraintInfo, protected ConstraintVariables<P2PAngle>
     {
     private:
         double da;
@@ -101,7 +106,7 @@ namespace GCS_EXP
     };
 
     // P2LDistanceInfo
-    class ConstraintInfoP2LDistance : public ConstraintInfo
+    class ConstraintInfoP2LDistance : public ConstraintInfo, protected ConstraintVariables<P2LDistance>
     {
     public:
         ConstraintInfoP2LDistance(
@@ -114,7 +119,7 @@ namespace GCS_EXP
     };
 
     // PointOnLineInfo
-    class ConstraintInfoPointOnLine : public ConstraintInfo
+    class ConstraintInfoPointOnLine : public ConstraintInfo, protected ConstraintVariables<PointOnLine>
     {
     public:
         ConstraintInfoPointOnLine(
@@ -130,7 +135,7 @@ namespace GCS_EXP
     };
 
     // PointOnPerpBisector
-    class ConstraintInfoPointOnPerpBisector : public ConstraintInfo
+    class ConstraintInfoPointOnPerpBisector : public ConstraintInfo, protected ConstraintVariables<PointOnPerpBisector>
     {
     public:
         ConstraintInfoPointOnPerpBisector(
@@ -146,7 +151,7 @@ namespace GCS_EXP
     };
 
     // ParallelInfo
-    class ConstraintInfoParallel : public ConstraintInfo
+    class ConstraintInfoParallel : public ConstraintInfo, protected ConstraintVariables<Parallel>
     {
     public:
         ConstraintInfoParallel(
@@ -158,7 +163,7 @@ namespace GCS_EXP
     };
 
     // PerpendicularInfo
-    class ConstraintInfoPerpendicular : public ConstraintInfo
+    class ConstraintInfoPerpendicular : public ConstraintInfo, protected ConstraintVariables<Perpendicular>
     {
     public:
         ConstraintInfoPerpendicular(
@@ -175,7 +180,7 @@ namespace GCS_EXP
     };
 
     // L2LAngleInfo
-    class ConstraintInfoL2LAngle : public ConstraintInfo
+    class ConstraintInfoL2LAngle : public ConstraintInfo, protected ConstraintVariables<L2LAngle>
     {
     public:
         ConstraintInfoL2LAngle(
@@ -194,7 +199,7 @@ namespace GCS_EXP
     };
 
     // MidpointOnLineInfo
-    class ConstraintInfoMidpointOnLine : public ConstraintInfo
+    class ConstraintInfoMidpointOnLine : public ConstraintInfo, protected ConstraintVariables<MidpointOnLine>
     {
     public:
         ConstraintInfoMidpointOnLine(
@@ -211,7 +216,7 @@ namespace GCS_EXP
     };
 
     // TangentCircumfInfo
-    class ConstraintInfoTangentCircumf : public ConstraintInfo
+    class ConstraintInfoTangentCircumf : public ConstraintInfo, protected ConstraintVariables<TangentCircumf>
     {
     private:
     	bool internal;
