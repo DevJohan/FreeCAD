@@ -48,6 +48,7 @@
 #include <TopoDS_Edge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 
+#include "SketchSolver.h"
 #include "Sketch_exp.h"
 #include "Constraint.h"
 #include <cmath>
@@ -60,7 +61,7 @@ using namespace Part;
 
 namespace Sketcher_exp {
 
-TYPESYSTEM_SOURCE(Sketch_exp, Base::Persistence)
+TYPESYSTEM_SOURCE(Sketch_exp, Sketcher::SketchSolver)
 
 Sketch_exp::Sketch_exp()
 : GCSsys(), ConstraintsCounter(0), isInitMove(false)
@@ -99,11 +100,15 @@ void Sketch_exp::clear(void)
     Conflicting.clear();
 }
 
-int Sketch_exp::setUpSketch(const std::vector<Part::Geometry *> &GeoList,
-                        const std::vector<Constraint *> &ConstraintList,
-                        int extGeoCount)
+int Sketch_exp::setUpSketch(
+		const int64_t new_geometry_version,
+		const std::vector<Part::Geometry *> &GeoList,
+		const std::vector<Constraint *> &ConstraintList,
+		int extGeoCount)
 {
-    clear();
+	clear();
+
+	geometry_version = new_geometry_version;
 
     std::vector<Part::Geometry *> intGeoList, extGeoList;
     const int internalConstraintCount = GeoList.size()-extGeoCount;
@@ -431,7 +436,7 @@ Py::Tuple Sketch_exp::getPyGeometry(void) const
     return tuple;
 }
 
-int Sketch_exp::checkGeoId(int geoId)
+int Sketch_exp::checkGeoId(int geoId) const
 {
     if (geoId < 0)
         geoId += Geoms.size();
@@ -1614,7 +1619,7 @@ bool Sketch_exp::updateGeometry()
 
 int Sketch_exp::solve(void)
 {
-	const int order[] = { 2, 1, 3, 0 };
+	const int order[] = { 0, 1, 2, 3 };
     Base::TimeInfo start_time;
     if (!isInitMove) { // make sure we are in single subsystem mode
         GCSsys.clearByTag(-1);
@@ -1892,7 +1897,7 @@ int Sketch_exp::getPointId(int geoId, PointPos pos) const
     return -1;
 }
 
-Base::Vector3d Sketch_exp::getPoint(int geoId, PointPos pos)
+Base::Vector3d Sketch_exp::getPoint(int geoId, PointPos pos) const
 {
     geoId = checkGeoId(geoId);
     int pointId = getPointId(geoId, pos);
@@ -2019,4 +2024,4 @@ void Sketch_exp::Restore(XMLReader &reader)
 
 }
 
-} /* namespace Sketcher */
+} /* namespace Sketcher_exp */

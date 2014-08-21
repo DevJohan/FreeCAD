@@ -44,11 +44,23 @@ void SolverHistoryGraph::paintEvent(
 		painter.drawLine(QPoint(7,i),QPoint(9,i));
 	for( int i=10; i < graph.width(); i+=10 )
 		painter.drawLine(QPoint(i,graph.height()),QPoint(i,graph.height()+3));
+
 	painter.drawImage(QPoint(10,0),graph);
+
+	static const int exponent_values_lines[] = { -3, -2, -1, 0, 1 };
+	static const int exponent_values_count = sizeof(exponent_values_lines)/sizeof(int);
+	for(int i = 0; i < exponent_values_count; i++ ){
+		int line = graph.height()- value2line( pow(10.0,exponent_values_lines[i] ));
+		painter.drawLine(QPoint(10,line),QPoint(graph.width(),line));
+	}
+}
+
+int SolverHistoryGraph::value2line( double value ){
+	return 1 + 10*log( 1. + 1.e3 * value );
 }
 
 void SolverHistoryGraph::statusUpdate(		double solveTime, int solver, bool succeeded ){
-	int graph_value = 20*log( 1 + 1e2 * solveTime );
+	int graph_value = value2line( solveTime );
 	imageData(imageData.height() - std::min(imageData.height()-2,(1+graph_value)),current_update) = rgb8(50,50,192);;
 	imageData(0,current_update_exp) = rgb8(solver == 0 ? 255:0, solver == 1 ? 255:0, solver==2? 255:0);
 	++current_update;
@@ -65,7 +77,7 @@ void SolverHistoryGraph::statusUpdate(		double solveTime, int solver, bool succe
 }
 
 void SolverHistoryGraph::statusUpdate_exp(	double solveTime, int solver, bool succeeded ){
-	int graph_value = 20*log( 1 + 1e2 * solveTime );
+	int graph_value = value2line( solveTime );
 	imageData(imageData.height() - std::min(imageData.height()-2,(1+graph_value)), current_update_exp) = rgb8(192,192,50);
 	imageData(1,current_update_exp) = rgb8(solver == 0 ? 255:0, solver == 1 ? 255:0, solver==2? 255:0);
 	++current_update_exp;

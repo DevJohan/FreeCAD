@@ -158,6 +158,8 @@ struct EditData {
     blockedPreselection(false),
     FullyConstrained(false),
     //ActSketch(0),
+    ActSketch(ActSketch_object),
+    ActSketch_exp(ActSketch_exp_object),
     EditRoot(0),
     PointsMaterials(0),
     CurvesMaterials(0),
@@ -195,8 +197,12 @@ struct EditData {
     bool visibleBeforeEdit;
 
     // instance of the solver
-    Sketcher::Sketch ActSketch;
-    Sketcher_exp::Sketch_exp ActSketch_exp;
+    Sketcher::Sketch ActSketch_object;
+    Sketcher_exp::Sketch_exp ActSketch_exp_object;
+    Sketcher_exp::Sketch_exp ActSketch_object2;
+
+    Sketcher::SketchSolver& ActSketch;
+    Sketcher::SketchSolver& ActSketch_exp;
     // container to track our own selected parts
     std::set<int> SelPointSet;
     std::set<int> SelCurvSet; // also holds cross axes at -1 and -2
@@ -1077,18 +1083,20 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
                 Base::Vector3d vec(x-xInit,y-yInit,0);
                 if (GeoId != Sketcher::Constraint::GeoUndef && PosId != Sketcher::none) {
                     if (edit->ActSketch_exp.movePoint(GeoId, PosId, vec, relative) == 0) {
-                        signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,true);
+                        signalSolveStatusUpdate_exp(edit->ActSketch_exp.getSolveTime(),edit->ActSketch_exp.getLatestAlgorithm(),true);
                     } else {
-                        signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,false);
+                        signalSolveStatusUpdate_exp(edit->ActSketch_exp.getSolveTime(),edit->ActSketch_exp.getLatestAlgorithm(),false);
                     }
                     if (edit->ActSketch.movePoint(GeoId, PosId, vec, relative) == 0) {
                         setPositionText(Base::Vector2D(x,y));
                         draw(true);
-                        signalSolved(QString::fromLatin1("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
-                        signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
+                        double solveTime = edit->ActSketch.getSolveTime();
+                        signalSolved(QString::fromLatin1("Solved in %1 sec").arg(solveTime));
+                        signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(), true );
                     } else {
-                        signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
-                        signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,false);
+                        double solveTime = edit->ActSketch.getSolveTime();
+                        signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(solveTime));
+                        signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(), false );
                         //Base::Console().Log("Error solving:%d\n",ret);
                     }
                 }
@@ -1098,18 +1106,20 @@ bool ViewProviderSketch::mouseMove(const SbVec2s &cursorPos, Gui::View3DInventor
             if (edit->DragCurve != -1) {
                 Base::Vector3d vec(x-xInit,y-yInit,0);
                 if (edit->ActSketch_exp.movePoint( edit->DragCurve, Sketcher::none, vec, relative )){
-                    signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,true);
+                    signalSolveStatusUpdate_exp( edit->ActSketch_exp.getSolveTime(), edit->ActSketch_exp.getLatestAlgorithm(), true );
                 }else{
-                    signalSolveStatusUpdate_exp(edit->ActSketch_exp.SolveTime,edit->ActSketch_exp.latest_algorithm,false);
+                    signalSolveStatusUpdate_exp( edit->ActSketch_exp.getSolveTime(), edit->ActSketch_exp.getLatestAlgorithm(), false );
                 }
                 if (edit->ActSketch.movePoint(edit->DragCurve, Sketcher::none, vec, relative) == 0) {
                     setPositionText(Base::Vector2D(x,y));
                     draw(true);
-                    signalSolved(QString::fromLatin1("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
-                    signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
+                    double solveTime = edit->ActSketch.getSolveTime();
+                    signalSolved(QString::fromLatin1("Solved in %1 sec").arg(solveTime));
+                    signalSolveStatusUpdate(solveTime,edit->ActSketch.getLatestAlgorithm(),true);
                 } else {
-                    signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
-                    signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,false);
+                    double solveTime = edit->ActSketch.getSolveTime();
+                    signalSolved(QString::fromLatin1("Unsolved (%1 sec)").arg(solveTime));
+                    signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(),false);
                 }
             }
             return true;
@@ -2749,8 +2759,11 @@ void ViewProviderSketch::draw(bool temp)
     std::vector<Part::Geometry *> tempGeo;
     if (temp)
         tempGeo = edit->ActSketch.extractGeometry(true, true); // with memory allocation
-    else
+    else{
+    	Base::Console().Message("*\n* Drawing complete geometry(%i)!\n*\n",
+    			getSketchObject()->getGeometryVersion());
         tempGeo = getSketchObject()->getCompleteGeometry(); // without memory allocation
+    }
     geomlist = &tempGeo;
 
 
@@ -2832,6 +2845,12 @@ void ViewProviderSketch::draw(bool temp)
             Points.push_back(end);
             Points.push_back(center);
         }
+        else if ((*it)->getTypeId() == Part::GeomBezierCurve::getClassTypeId()) { // add a bezier curve
+             const Part::GeomBezierCurve *bezier_curve = dynamic_cast<const Part::GeomBezierCurve *>(*it);
+             Handle_Geom_BezierCurve curve = Handle_Geom_BezierCurve::DownCast(bezier_curve->handle());
+
+             //TODO: Implement
+         }
         else if ((*it)->getTypeId() == Part::GeomBSplineCurve::getClassTypeId()) { // add a bspline
             const Part::GeomBSplineCurve *spline = dynamic_cast<const Part::GeomBSplineCurve *>(*it);
             Handle_Geom_BSplineCurve curve = Handle_Geom_BSplineCurve::DownCast(spline->handle());
@@ -2866,6 +2885,33 @@ void ViewProviderSketch::draw(bool temp)
         else {
         }
     }
+
+
+    edit->CurvesCoordinate->point.setNum(Coords.size());
+    edit->CurveSet->numVertices.setNum(Index.size());
+    edit->CurvesMaterials->diffuseColor.setNum(Index.size());
+    edit->PointsCoordinate->point.setNum(Points.size());
+    edit->PointsMaterials->diffuseColor.setNum(Points.size());
+
+    SbVec3f *verts = edit->CurvesCoordinate->point.startEditing();
+    int32_t *index = edit->CurveSet->numVertices.startEditing();
+    SbVec3f *pverts = edit->PointsCoordinate->point.startEditing();
+
+    int i=0; // setting up the line set
+    for (std::vector<Base::Vector3d>::const_iterator it = Coords.begin(); it != Coords.end(); ++it,i++)
+        verts[i].setValue(it->x,it->y,zLines);
+
+    i=0; // setting up the indexes of the line set
+    for (std::vector<unsigned int>::const_iterator it = Index.begin(); it != Index.end(); ++it,i++)
+        index[i] = *it;
+
+    i=0; // setting up the point set
+    for (std::vector<Base::Vector3d>::const_iterator it = Points.begin(); it != Points.end(); ++it,i++)
+        pverts[i].setValue(it->x,it->y,zPoints);
+
+    edit->CurvesCoordinate->point.finishEditing();
+    edit->CurveSet->numVertices.finishEditing();
+    edit->PointsCoordinate->point.finishEditing();
 
     std::vector<Part::Geometry *> tempGeo_exp;
     if (temp){ // secondary Experimental solver
@@ -2983,6 +3029,7 @@ void ViewProviderSketch::draw(bool temp)
     		}
     	}
 
+<<<<<<< HEAD
     }
 
     edit->CurvesCoordinate->point.setNum(Coords.size());
@@ -3017,21 +3064,28 @@ void ViewProviderSketch::draw(bool temp)
         edit->CurvesMaterials_exp->diffuseColor.setNum(Index.size());
         edit->PointsCoordinate_exp->point.setNum(Points.size());
         edit->PointsMaterials_exp->diffuseColor.setNum(Points.size());
+=======
+        edit->CurvesCoordinate_exp->point.setNum(Coords_exp.size());
+        edit->CurveSet_exp->numVertices.setNum(Index_exp.size());
+        edit->CurvesMaterials_exp->diffuseColor.setNum(Index_exp.size());
+        edit->PointsCoordinate_exp->point.setNum(Points_exp.size());
+        edit->PointsMaterials_exp->diffuseColor.setNum(Points_exp.size());
+>>>>>>> Abstracting SketchSolver from Sketch to allow interchangable use of experimental sketcher
 
         SbVec3f *verts_exp = edit->CurvesCoordinate_exp->point.startEditing();
         int32_t *index_exp = edit->CurveSet_exp->numVertices.startEditing();
         SbVec3f *pverts_exp = edit->PointsCoordinate_exp->point.startEditing();
 
         int i=0; // setting up the line set
-        for (std::vector<Base::Vector3d>::const_iterator it = Coords.begin(); it != Coords.end(); ++it,i++)
+        for (std::vector<Base::Vector3d>::const_iterator it = Coords_exp.begin(); it != Coords_exp.end(); ++it,i++)
             verts_exp[i].setValue(it->x,it->y,zLines);
 
         i=0; // setting up the indexes of the line set
-        for (std::vector<unsigned int>::const_iterator it = Index.begin(); it != Index.end(); ++it,i++)
+        for (std::vector<unsigned int>::const_iterator it = Index_exp.begin(); it != Index_exp.end(); ++it,i++)
             index_exp[i] = *it;
 
         i=0; // setting up the point set
-        for (std::vector<Base::Vector3d>::const_iterator it = Points.begin(); it != Points.end(); ++it,i++)
+        for (std::vector<Base::Vector3d>::const_iterator it = Points_exp.begin(); it != Points_exp.end(); ++it,i++)
             pverts_exp[i].setValue(it->x,it->y,zPoints);
 
         edit->CurvesCoordinate_exp->point.finishEditing();
@@ -4030,16 +4084,25 @@ const std::vector<int> &ViewProviderSketch::getRedundant(void) const
 
 void ViewProviderSketch::solveSketch_exp(void)
 {
-	Sketcher_exp::Sketch_exp& ActSketch_exp = edit->ActSketch_exp;
+	Sketcher::SketchSolver& ActSketch_exp = edit->ActSketch_exp;
     // set up the sketch and diagnose possible conflicts
-    int dofs = ActSketch_exp.setUpSketch(  getSketchObject()->getCompleteGeometry(),
-                                           getSketchObject()->Constraints.getValues(),
-                                           getSketchObject()->getExternalGeometryCount());
-    if(ActSketch_exp.solve() == 0){
-        signalSolveStatusUpdate_exp(ActSketch_exp.SolveTime,ActSketch_exp.latest_algorithm,true);
+
+	if( ActSketch_exp.getGeometryVersion() != getSketchObject()->getGeometryVersion()){
+		int dofs = ActSketch_exp.setUpSketch(
+				getSketchObject()->getGeometryVersion(),
+				getSketchObject()->getCompleteGeometry(),
+				getSketchObject()->Constraints.getValues(),
+				getSketchObject()->getExternalGeometryCount());
+		Base::Console().Message("!\n! Re-validating experimental sketcher(%i)! \n!\n",
+				getSketchObject()->getGeometryVersion());
+	}
+
+    if( ActSketch_exp.solve() == 0 ){
+        signalSolveStatusUpdate_exp( ActSketch_exp.getSolveTime(), ActSketch_exp.getLatestAlgorithm(), true );
     } else {
-        signalSolveStatusUpdate_exp(ActSketch_exp.SolveTime,ActSketch_exp.latest_algorithm,false);
+        signalSolveStatusUpdate_exp( ActSketch_exp.getSolveTime(), ActSketch_exp.getLatestAlgorithm(), false );
     }
+
 }
 
 void ViewProviderSketch::solveSketch(void)
@@ -4048,7 +4111,8 @@ void ViewProviderSketch::solveSketch(void)
 	solveSketch_exp();
 
     // set up the sketch and diagnose possible conflicts
-    int dofs = edit->ActSketch.setUpSketch(getSketchObject()->getCompleteGeometry(),
+    int dofs = edit->ActSketch.setUpSketch(getSketchObject()->getGeometryVersion(),
+    									   getSketchObject()->getCompleteGeometry(),
                                            getSketchObject()->Constraints.getValues(),
                                            getSketchObject()->getExternalGeometryCount());
     if (getSketchObject()->Geometry.getSize() == 0) {
@@ -4092,13 +4156,20 @@ void ViewProviderSketch::solveSketch(void)
                 else
                     signalSetUp(tr("Under-constrained sketch with %1 degrees of freedom").arg(dofs));
             }
+<<<<<<< HEAD
             
             signalSolved(tr("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
             signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
+=======
+            double solveTime = edit->ActSketch.getSolveTime();
+            signalSolved(tr("Solved in %1 sec").arg(solveTime));
+            signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(), true);
+>>>>>>> Abstracting SketchSolver from Sketch to allow interchangable use of experimental sketcher
         }
         else {
-            signalSolved(tr("Unsolved (%1 sec)").arg(edit->ActSketch.SolveTime));
-            signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,false);
+            double solveTime = edit->ActSketch.getSolveTime();
+            signalSolved(tr("Unsolved (%1 sec)").arg(solveTime));
+            signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(), false);
         }
     }
 }

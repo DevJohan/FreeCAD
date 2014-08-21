@@ -29,6 +29,7 @@
 #include <Mod/Part/App/TopoShape.h>
 #include "Constraint.h"
 
+#include <Mod/Sketcher/App/SketchSolver.h>
 #include "freegcs/GCS.h"
 
 #include <Base/Persistence.h>
@@ -36,7 +37,7 @@
 namespace Sketcher
 {
 
-class SketcherExport Sketch :public Base::Persistence
+class SketcherExport Sketch : public SketchSolver
 {
     TYPESYSTEM_HEADER();
 
@@ -48,6 +49,10 @@ public:
     virtual unsigned int getMemSize(void) const;
     virtual void Save(Base::Writer &/*writer*/) const;
     virtual void Restore(Base::XMLReader &/*reader*/);
+
+    int64_t getGeometryVersion() const { return geometry_version; }
+    virtual double getSolveTime() const { return SolveTime; }
+    virtual int getLatestAlgorithm() const { return latest_algorithm; }
 
     /// solve the actual set up sketch
     int solve(void);
@@ -66,7 +71,8 @@ public:
       * a fully constrained or under-constrained sketch may contain conflicting
       * constraints or may not
       */
-    int setUpSketch(const std::vector<Part::Geometry *> &GeoList, const std::vector<Constraint *> &ConstraintList,
+
+    int setUpSketch(const int64_t new_geometry_version, const std::vector<Part::Geometry *> &GeoList, const std::vector<Constraint *> &ConstraintList,
                     int extGeoCount=0);
     /// return the actual geometry of the sketch a TopoShape
     Part::TopoShape toShape(void) const;
@@ -83,7 +89,7 @@ public:
     /// retrieves the index of a point
     int getPointId(int geoId, PointPos pos) const;
     /// retrieves a point
-    Base::Vector3d getPoint(int geoId, PointPos pos);
+    Base::Vector3d getPoint(int geoId, PointPos pos) const;
 
     bool hasConflicts(void) const { return (Conflicting.size() > 0); }
     const std::vector<int> &getConflicting(void) const { return Conflicting; }
@@ -204,6 +210,7 @@ protected:
         int               endPointId;      // index in Points of the end point of this geometry
     };
 
+    int64_t geometry_version;
     std::vector<GeoDef> Geoms;
     GCS::System GCSsys;
     int ConstraintsCounter;
@@ -227,7 +234,7 @@ private:
     bool updateGeometry(void);
 
     /// checks if the index bounds and converts negative indices to positive
-    int checkGeoId(int geoId);
+    int checkGeoId(int geoId) const ;
 };
 
 } //namespace Part

@@ -580,7 +580,6 @@ int SubSystem::diagnose()
 
 int SubSystem::solve_BFGS( bool isFine)
 {
-	SubSystem *subsys = this;
     int xsize = dependent_variable_count;
     if (xsize == 0)
         return Success;
@@ -594,16 +593,16 @@ int SubSystem::solve_BFGS( bool isFine)
     Eigen::VectorXd Dy(xsize);
 
     // Initial unknowns vector and initial gradient vector
-    subsys->getParams(x);
-    subsys->calcGrad(grad);
+    getParams(x);
+    calcGrad(grad);
 
     // Initial search direction opposed to gradient (steepest-descent)
     xdir = -grad;
-    lineSearch(subsys, xdir);
-    double err = subsys->error();
+    lineSearch( this, xdir );
+    double err = error();
 
     h = x;
-    subsys->getParams(x);
+    getParams(x);
     h = x - h; // = x - xold
 
     double convergence = isFine ? XconvergenceFine : XconvergenceRough;
@@ -618,7 +617,7 @@ int SubSystem::solve_BFGS( bool isFine)
             break;
 
         y = grad;
-        subsys->calcGrad(grad);
+        calcGrad( grad );
         y = grad - y; // = grad - gradold
 
         double hty = h.dot(y);
@@ -635,11 +634,11 @@ int SubSystem::solve_BFGS( bool isFine)
         D -= 1./hty * (h * Dy.transpose() + Dy * h.transpose());
 
         xdir = -D * grad;
-        lineSearch(subsys, xdir);
-        err = subsys->error();
+        lineSearch( this, xdir);
+        err = error();
 
         h = x;
-        subsys->getParams(x);
+        getParams(x);
         h = x - h; // = x - xold
     }
 
@@ -652,7 +651,6 @@ int SubSystem::solve_BFGS( bool isFine)
 
 int SubSystem::solve_LM()
 {
-	SubSystem* subsys = this;
     const int xsize = dependent_variable_count;
     const int csize = constraints_list.size();
 
@@ -664,8 +662,8 @@ int SubSystem::solve_LM()
     Eigen::MatrixXd A(xsize, xsize);
     Eigen::VectorXd x(xsize), h(xsize), x_new(xsize), g(xsize), diag_A(xsize);
 
-    subsys->getParams(x);
-    subsys->calcResidual(e);
+    getParams(x);
+    calcResidual(e);
     e*=-1;
 
     int maxIterNumber = MaxIterations * xsize;
@@ -688,7 +686,7 @@ int SubSystem::solve_LM()
         }
 
         // J^T J, J^T e
-        subsys->calcJacobi(J);;
+        calcJacobi(J);;
 
         A = J.transpose()*J;
         g = J.transpose()*e;
@@ -722,7 +720,7 @@ int SubSystem::solve_LM()
             if (rel_error < 1e-5) {
 
                 // restrict h according to maxStep
-                double scale = subsys->maxStep(h);
+                double scale = maxStep( h );
                 if (scale < 1.)
                     h *= scale;
 
@@ -739,8 +737,8 @@ int SubSystem::solve_LM()
                     break;
                 }
 
-                subsys->setParams(x_new);
-                subsys->calcResidual(e_new);
+                setParams(x_new);
+                calcResidual(e_new);
                 e_new *= -1;
 
                 double dF = e.squaredNorm() - e_new.squaredNorm();
@@ -783,7 +781,6 @@ int SubSystem::solve_LM()
 
 int SubSystem::solve_DL()
 {
-	SubSystem* subsys = this;
     double tolg=1e-80, tolx=1e-80, tolf=1e-10;
 
     const int xsize = dependent_variable_count;
@@ -798,9 +795,9 @@ int SubSystem::solve_DL()
     Eigen::VectorXd g(xsize), h_sd(xsize), h_gn(xsize), h_dl(xsize);
 
     double err;
-    subsys->getParams(x);
-    subsys->calcResidual(fx, err);
-    subsys->calcJacobi(Jx);
+    getParams(x);
+    calcResidual(fx, err);
+    calcJacobi(Jx);
 
     g = Jx.transpose()*(-fx);
 
@@ -882,9 +879,9 @@ int SubSystem::solve_DL()
         // get the new values
         double err_new;
         x_new = x + h_dl;
-        subsys->setParams(x_new);
-        subsys->calcResidual(fx_new, err_new);
-        subsys->calcJacobi(Jx_new);
+        setParams(x_new);
+        calcResidual(fx_new, err_new);
+        calcJacobi(Jx_new);
 
         // calculate the linear model and the update ratio
         double dL = err - 0.5*(fx + Jx*h_dl).squaredNorm();
@@ -931,7 +928,11 @@ int SubSystem::solve_DL()
 
 int SubSystem::solve( bool isFine, Algorithm alg )
 {
-	if( priority_constraints_count == 0 || priority_constraints_count == constraints_list.size() ){
+	updateSystemParameters();
+
+	if( 	priority_constraints_count == 0 ||
+			priority_constraints_count == constraints_list.size() )
+	{
 		if (alg == BFGS)
 			return solve_BFGS(isFine);
 		else if (alg == LevenbergMarquardt)
@@ -962,11 +963,11 @@ int SubSystem::solve( bool isFine, Algorithm alg )
 
     // We assume that there are no common constraints in Priority and Auxiliary
 
-    getParams(x);
+    getParams( x );
 
-    calcGradAuxiliary(grad);
-    calcJacobiPriority(JA);
-    calcResidualPriority(resA);
+    calcGradAuxiliary( grad );
+    calcJacobiPriority( JA );
+    calcResidualPriority( resA );
 
     double convergence = isFine ? XconvergenceFine : XconvergenceRough;
     int maxIterNumber = MaxIterations * xsize;
@@ -975,7 +976,7 @@ int SubSystem::solve( bool isFine, Algorithm alg )
     double mu = 0;
     lambda.setZero();
     for (int iter=1; iter < maxIterNumber; iter++) {
-        int status = qp_eq(B, grad, JA, resA, xdir, Y, Z);
+        int status = qp_eq( B, grad, JA, resA, xdir, Y, Z);
         if (status)
             break;
 

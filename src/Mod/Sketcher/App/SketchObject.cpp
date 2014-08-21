@@ -53,7 +53,9 @@
 
 #include "SketchObject.h"
 #include "SketchObjectPy.h"
+#include "SketchSolver.h"
 #include "Sketch.h"
+#include "Sketch_exp.h"
 
 using namespace Sketcher;
 using namespace Base;
@@ -111,9 +113,19 @@ App::DocumentObjectExecReturn *SketchObject::execute(void)
         delConstraintsToExternal();
     }
 
-    Sketch sketch;
-    
-    int dofs = sketch.setUpSketch(getCompleteGeometry(), Constraints.getValues(),
+    Sketcher_exp::Sketch_exp sketch_exp_object;
+    SketchSolver& sketch_exp = sketch_exp_object;
+    int dofs_exp = sketch_exp.setUpSketch(
+    		getGeometryVersion(),
+    		getCompleteGeometry(),
+    		Constraints.getValues(),
+    		getExternalGeometryCount());
+
+    int exp_ret = sketch_exp.solve();
+
+    Sketch sketch_object;
+    SketchSolver& sketch = sketch_object;
+    int dofs = sketch.setUpSketch(getGeometryVersion(), getCompleteGeometry(), Constraints.getValues(),
                                   getExternalGeometryCount());
     if (dofs < 0) { // over-constrained sketch
         std::string msg="Over-constrained sketch\n";
@@ -131,6 +143,7 @@ App::DocumentObjectExecReturn *SketchObject::execute(void)
         return new App::DocumentObjectExecReturn(msg.c_str(),this);
     }
 
+
     // solve the sketch
     if (sketch.solve() != 0)
         return new App::DocumentObjectExecReturn("Solving the sketch failed",this);
@@ -147,9 +160,23 @@ App::DocumentObjectExecReturn *SketchObject::execute(void)
 
 int SketchObject::hasConflicts(void) const
 {
+	Sketcher_exp::Sketch_exp sketch_exp_object;
+    SketchSolver& sketch_exp = sketch_exp_object;
+    int dofs_exp = sketch_exp.setUpSketch(
+    		getGeometryVersion(),
+    		getCompleteGeometry(),
+    		Constraints.getValues(),
+    		getExternalGeometryCount());
+    if( dofs_exp < 0 )
+    	; // over-constrained sketch
+    else if ( sketch_exp.hasConflicts() )
+    	; // conflicting constraints
+
+
     // set up a sketch (including dofs counting and diagnosing of conflicts)
-    Sketch sketch;
-    int dofs = sketch.setUpSketch(getCompleteGeometry(), Constraints.getValues(),
+    Sketch sketch_object;
+    SketchSolver& sketch = sketch_object;
+    int dofs = sketch.setUpSketch(getGeometryVersion(),getCompleteGeometry(), Constraints.getValues(),
                                   getExternalGeometryCount());
     if (dofs < 0) // over-constrained sketch
         return -2;
@@ -162,8 +189,24 @@ int SketchObject::hasConflicts(void) const
 int SketchObject::solve()
 {
     // set up a sketch (including dofs counting and diagnosing of conflicts)
-    Sketch sketch;
-    int dofs = sketch.setUpSketch(getCompleteGeometry(), Constraints.getValues(),
+    Sketcher_exp::Sketch_exp sketch_exp_object;
+    SketchSolver& sketch_exp = sketch_exp_object;
+    int dofs_exp = sketch_exp.setUpSketch(
+    		getGeometryVersion(),
+    		getCompleteGeometry(),
+    		Constraints.getValues(),
+    		getExternalGeometryCount());
+    int err_exp=0;
+    if (dofs_exp < 0) // over-constrained sketch
+        err_exp = -3;
+    else if (sketch_exp.hasConflicts()) // conflicting constraints
+        err_exp = -3;
+    else if (sketch_exp.solve() != 0) // solving
+        err_exp = -2;
+
+    Sketch sketch_object;
+    SketchSolver& sketch = sketch_object;
+    int dofs = sketch.setUpSketch(getGeometryVersion(), getCompleteGeometry(), Constraints.getValues(),
                                   getExternalGeometryCount());
     int err=0;
     if (dofs < 0) // over-constrained sketch
@@ -219,9 +262,30 @@ int SketchObject::setDatum(int ConstrId, double Datum)
 
 int SketchObject::movePoint(int GeoId, PointPos PosId, const Base::Vector3d& toPoint, bool relative)
 {
-    Sketch sketch;
-    int dofs = sketch.setUpSketch(getCompleteGeometry(), Constraints.getValues(),
-                                  getExternalGeometryCount());
+    Sketch sketch_object;
+	Sketcher_exp::Sketch_exp sketch_exp_object;
+	Sketcher_exp::Sketch_exp sketch_exp_object2;
+
+	SketchSolver& sketch_exp = sketch_exp_object;
+    int dofs_exp = sketch_exp.setUpSketch(
+    		getGeometryVersion(),
+    		getCompleteGeometry(),
+    		Constraints.getValues(),
+    		getExternalGeometryCount());
+    if (dofs_exp < 0) // over-constrained sketch
+        return -1;
+    if (sketch_exp.hasConflicts()) // conflicting constraints
+        return -1;
+
+    int ret_exp = sketch_exp.movePoint(GeoId, PosId, toPoint, relative);
+
+
+    SketchSolver& sketch = sketch_exp;
+    int dofs = sketch.setUpSketch(
+    		getGeometryVersion(),
+    		getCompleteGeometry(),
+    		Constraints.getValues(),
+            getExternalGeometryCount());
     if (dofs < 0) // over-constrained sketch
         return -1;
     if (sketch.hasConflicts()) // conflicting constraints
@@ -1624,7 +1688,8 @@ void SketchObject::Restore(XMLReader &reader)
 
 void SketchObject::onChanged(const App::Property* prop)
 {
-    if (prop == &Geometry || prop == &Constraints) {
+    ++geometry_version;
+	if (prop == &Geometry || prop == &Constraints) {
         Constraints.checkGeometry(getCompleteGeometry());
     }
     else if (prop == &ExternalGeometry) {

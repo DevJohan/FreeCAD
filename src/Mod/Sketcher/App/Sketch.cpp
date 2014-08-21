@@ -48,6 +48,7 @@
 #include <TopoDS_Edge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 
+#include "SketchSolver.h"
 #include "Sketch.h"
 #include "Constraint.h"
 #include <cmath>
@@ -59,7 +60,7 @@ using namespace Sketcher;
 using namespace Base;
 using namespace Part;
 
-TYPESYSTEM_SOURCE(Sketcher::Sketch, Base::Persistence)
+TYPESYSTEM_SOURCE(Sketcher::Sketch, Sketcher::SketchSolver)
 
 Sketch::Sketch()
 : GCSsys(), ConstraintsCounter(0), isInitMove(false)
@@ -98,11 +99,14 @@ void Sketch::clear(void)
     Conflicting.clear();
 }
 
-int Sketch::setUpSketch(const std::vector<Part::Geometry *> &GeoList,
+int Sketch::setUpSketch(const int64_t new_geometry_version,
+						const std::vector<Part::Geometry *> &GeoList,
                         const std::vector<Constraint *> &ConstraintList,
                         int extGeoCount)
 {
     clear();
+
+    geometry_version = new_geometry_version;
 
     std::vector<Part::Geometry *> intGeoList, extGeoList;
     for (int i=0; i < int(GeoList.size())-extGeoCount; i++)
@@ -394,7 +398,7 @@ std::vector<Part::Geometry *> Sketch::extractGeometry(bool withConstrucionElemen
                                                       bool withExternalElements) const
 {
     std::vector<Part::Geometry *> temp;
-    temp.reserve(Geoms.size());
+    temp.reserve( Geoms.size() );
     for (std::vector<GeoDef>::const_iterator it=Geoms.begin(); it != Geoms.end(); ++it)
         if ((!it->external || withExternalElements) && (!it->geo->Construction || withConstrucionElements))
             temp.push_back(it->geo->clone());
@@ -429,7 +433,7 @@ Py::Tuple Sketch::getPyGeometry(void) const
     return tuple;
 }
 
-int Sketch::checkGeoId(int geoId)
+int Sketch::checkGeoId(int geoId) const
 {
     if (geoId < 0)
         geoId += Geoms.size();
@@ -1887,7 +1891,7 @@ int Sketch::getPointId(int geoId, PointPos pos) const
     return -1;
 }
 
-Base::Vector3d Sketch::getPoint(int geoId, PointPos pos)
+Base::Vector3d Sketch::getPoint(int geoId, PointPos pos) const
 {
     geoId = checkGeoId(geoId);
     int pointId = getPointId(geoId, pos);

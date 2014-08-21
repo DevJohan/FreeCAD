@@ -84,6 +84,9 @@ public:
      */
     int delExternal(int ExtGeoId);
 
+
+    int64_t getGeometryVersion() const { return geometry_version; }
+
     /** returns a pointer to a given Geometry index, possible indexes are:
      *  id>=0 for user defined geometries,
      *  id==-1 for the horizontal sketch axis,
@@ -110,6 +113,8 @@ public:
     int solve();
     /// set the datum of a Distance or Angle constraint and solve
     int setDatum(int ConstrId, double Datum);
+    /// move this point to a new location and solve
+    int movePoint(int VertexId, const Base::Vector3d& toPoint, bool relative = false );
     /// move this point to a new location and solve
     int movePoint(int GeoId, PointPos PosId, const Base::Vector3d& toPoint, bool relative=false);
     /// retrieves the coordinates of a point
@@ -166,6 +171,7 @@ protected:
     virtual void onFinishDuplicating();
 
 private:
+    int64_t geometry_version;
     std::vector<Part::Geometry *> ExternalGeo;
 
     std::vector<int> VertexId2GeoId;

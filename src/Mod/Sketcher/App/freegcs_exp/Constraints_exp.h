@@ -139,7 +139,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const  = 0;
         virtual void rescale(double coef=1.);
         virtual double error() = 0;
-        virtual double grad(index_type) = 0;
+//        virtual double grad(index_type) = 0;
         virtual void grad( std::vector< grad_component_t >& gradVec ) = 0;
         virtual double maxStep(const std::vector<double>& dir, double lim=1.);
     };
@@ -157,7 +157,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -174,7 +174,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -191,7 +191,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
         virtual double maxStep( const std::vector<double>& dir, double lim=1.);
     };
@@ -212,7 +212,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
         virtual double maxStep(const std::vector<double>& dir, double lim=1.);
     };
@@ -230,7 +230,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
         virtual double maxStep(const std::vector<double>& dir, double lim=1.);
     };
@@ -248,7 +248,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -265,7 +265,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -282,7 +282,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -299,7 +299,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -316,7 +316,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
         virtual double maxStep( const std::vector<double>& dir, double lim=1.);
     };
@@ -334,7 +334,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
@@ -354,7 +354,7 @@ namespace GCS_EXP
         virtual Constraint* clone() const;
         virtual void rescale(double coef=1.);
         virtual double error();
-        virtual double grad(index_type);
+//        virtual double grad(index_type);
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
