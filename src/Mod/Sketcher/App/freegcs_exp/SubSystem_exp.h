@@ -117,15 +117,8 @@ enum Algorithm {
         void setReference();
         void resetToReference();
 
-        void rescaleConstraint(int id, double coeff)/*{
-        if ( id >= constraints_list.size() || id < 0 )
-            return;
-        SubSystem* constraint_subsys = getSubsystem(id);
-        if ( constraint_subsys )
-        	constraint_subsys->rescaleConstraint(id,coeff);
-        	}*/;
-
         const std::vector<double>& getVariables() const { return variables; }
+        int getConstraintCount() const { return constraints_list.size(); }
         int getDependentVariableCount() const { return dependent_variable_count; }
         std::vector<variable_index_type> getIndices(
         		const std::vector<double*>& original_variables);

@@ -935,7 +935,8 @@ void System::initSolution()
     // create subsystems
     clearSubSystems();
     for (int cid=0; cid < clists.size(); cid++) {
-        subSystems.push_back( new SubSystem( clists[cid], plists[cid] ) );
+    	if( clists[cid].size() > 0 )
+    		subSystems.push_back( new SubSystem( clists[cid], plists[cid] ) );
     }
 
     isInit = true;
@@ -945,7 +946,10 @@ void System::initSolution()
 
     // diagnose conflicting or redundant constraints
     if (!hasDiagnosis) {
-        diagnose();
+        Base::TimeInfo diag_start_time;
+    	diagnose();
+        Base::TimeInfo diag_end_time;
+        Base::Console().Message( "GCS_EXP::diagnose took %f\n",  Base::TimeInfo::diffTimeF(diag_start_time,diag_end_time) );
         if (!hasDiagnosis)
             return;
     }
@@ -1007,8 +1011,9 @@ int System::solve( bool isFine, Algorithm alg )
              resetToReference();
              isReset = true;
         }
-        if(subSystems[cid] )
+        if(subSystems[cid] ){
             res = std::max( res, subSystems[cid]->solve( isFine , alg ) );
+        }
     }
     return res;
 }
@@ -1045,6 +1050,7 @@ int System::diagnose()
         dofs = -1;
         return dofs;
     }
+    dofs = 0;
 
     redundant.clear();
     conflictingTags.clear();
@@ -1053,6 +1059,10 @@ int System::diagnose()
     		it != subSystems.end(); ++it )
     {
     	int subsystem_dof = (*it)->diagnose();
+    	if( dofs >= 0 && subsystem_dof >= 0 )
+    		dofs += subsystem_dof;
+    	else
+    		dofs = -1;
     }
 
     hasDiagnosis = true;

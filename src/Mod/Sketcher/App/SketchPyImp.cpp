@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2010     *
+ *   Copyright (c) Jï¿½rgen Riegel          (juergen.riegel@web.de) 2010     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -34,39 +34,39 @@
 #include "Constraint.h"
 #include "ConstraintPy.h"
 
-// inclusion of the generated files (generated out of SketchPy.xml)
-#include "SketchPy.h"
-#include "SketchPy.cpp"
+// inclusion of the generated files (generated out of SketchSolverPy.xml)
+#include "SketchSolverPy.h"
+#include "SketchSolverPy.cpp"
 
 using namespace Sketcher;
 using namespace Part;
 
 // returns a string which represents the object e.g. when printed in python
-std::string SketchPy::representation(void) const
+std::string SketchSolverPy::representation(void) const
 {
     return std::string("<Sketch object>");
 }
 
-PyObject *SketchPy::PyMake(struct _typeobject *, PyObject *, PyObject *)  // Python wrapper
+PyObject *SketchSolverPy::PyMake(struct _typeobject *, PyObject *, PyObject *)  // Python wrapper
 {
-    // create a new instance of SketchPy and the Twin object 
-    return new SketchPy(new Sketch());
+    // create a new instance of SketchSolverPy and the Twin object
+    return new SketchSolverPy(new Sketch());
 }
 
 // constructor method
-int SketchPy::PyInit(PyObject* /*args*/, PyObject* /*kwd*/)
+int SketchSolverPy::PyInit(PyObject* /*args*/, PyObject* /*kwd*/)
 {
     return 0;
 }
 
 // +++ methodes implementer ++++++++++++++++++++++++++++++++++++++++++++++++
 
-PyObject* SketchPy::solve(PyObject *args)
+PyObject* SketchSolverPy::solve(PyObject *args)
 {
-    return Py::new_reference_to(Py::Int(getSketchPtr()->solve()));
+    return Py::new_reference_to(Py::Int(getSketchSolverPtr()->solve()));
 }
 
-PyObject* SketchPy::addGeometry(PyObject *args)
+PyObject* SketchSolverPy::addGeometry(PyObject *args)
 {
     PyObject *pcObj;
     if (!PyArg_ParseTuple(args, "O", &pcObj))
@@ -74,7 +74,7 @@ PyObject* SketchPy::addGeometry(PyObject *args)
 
     if (PyObject_TypeCheck(pcObj, &(Part::GeometryPy::Type))) {
         Part::Geometry *geo = static_cast<Part::GeometryPy*>(pcObj)->getGeometryPtr();
-        return Py::new_reference_to(Py::Int(this->getSketchPtr()->addGeometry(geo)));
+        return Py::new_reference_to(Py::Int(this->getSketchSolverPtr()->addGeometry(geo)));
     }
     else if (PyObject_TypeCheck(pcObj, &(PyList_Type)) ||
              PyObject_TypeCheck(pcObj, &(PyTuple_Type))) {
@@ -87,7 +87,7 @@ PyObject* SketchPy::addGeometry(PyObject *args)
             }
         }
 
-        int ret = this->getSketchPtr()->addGeometry(geoList) + 1;
+        int ret = this->getSketchSolverPtr()->addGeometry(geoList) + 1;
         std::size_t numGeo = geoList.size();
         Py::Tuple tuple(numGeo);
         for (std::size_t i=0; i<numGeo; ++i) {
@@ -102,7 +102,7 @@ PyObject* SketchPy::addGeometry(PyObject *args)
     throw Py::TypeError(error);
 }
 
-PyObject* SketchPy::addConstraint(PyObject *args)
+PyObject* SketchSolverPy::addConstraint(PyObject *args)
 {
     PyObject *pcObj;
     if (!PyArg_ParseTuple(args, "O", &pcObj))
@@ -118,7 +118,7 @@ PyObject* SketchPy::addConstraint(PyObject *args)
             }
         }
 
-        int ret = getSketchPtr()->addConstraints(values) + 1;
+        int ret = getSketchSolverPtr()->addConstraints(values) + 1;
         std::size_t numCon = values.size();
         Py::Tuple tuple(numCon);
         for (std::size_t i=0; i<numCon; ++i) {
@@ -129,7 +129,7 @@ PyObject* SketchPy::addConstraint(PyObject *args)
     }
     else if(PyObject_TypeCheck(pcObj, &(ConstraintPy::Type))) {
         ConstraintPy  *pcObject = static_cast<ConstraintPy*>(pcObj);
-        int ret = getSketchPtr()->addConstraint(pcObject->getConstraintPtr());
+        int ret = getSketchSolverPtr()->addConstraint(pcObject->getConstraintPtr());
         return Py::new_reference_to(Py::Int(ret));
     }
     else {
@@ -139,16 +139,16 @@ PyObject* SketchPy::addConstraint(PyObject *args)
     }
 }
 
-PyObject* SketchPy::clear(PyObject *args)
+PyObject* SketchSolverPy::clear(PyObject *args)
 {
     int index;
     if (!PyArg_ParseTuple(args, "i", &index))
         return 0;
 
-    return Py::new_reference_to(Py::Int(getSketchPtr()->addVerticalConstraint(index)));
+    return Py::new_reference_to(Py::Int(getSketchSolverPtr()->addVerticalConstraint(index)));
 }
 
-PyObject* SketchPy::movePoint(PyObject *args)
+PyObject* SketchSolverPy::movePoint(PyObject *args)
 {
     int index1,index2;
     PyObject *pcObj;
@@ -157,43 +157,43 @@ PyObject* SketchPy::movePoint(PyObject *args)
         return 0;
     Base::Vector3d* toPoint = static_cast<Base::VectorPy*>(pcObj)->getVectorPtr();
 
-    return Py::new_reference_to(Py::Int(getSketchPtr()->movePoint(index1,(Sketcher::PointPos)index2,*toPoint,(relative>0))));
+    return Py::new_reference_to(Py::Int(getSketchSolverPtr()->movePoint(index1,(Sketcher::PointPos)index2,*toPoint,(relative>0))));
 }
 
 // +++ attributes implementer ++++++++++++++++++++++++++++++++++++++++++++++++
 
-Py::Int SketchPy::getConstraint(void) const
+Py::Int SketchSolverPy::getConstraint(void) const
 {
     //return Py::Int();
     throw Py::AttributeError("Not yet implemented");
 }
 
-Py::Tuple SketchPy::getConstraints(void) const
+Py::Tuple SketchSolverPy::getConstraints(void) const
 {
     //return Py::Tuple();
     throw Py::AttributeError("Not yet implemented");
 }
 
-Py::Tuple SketchPy::getGeometries(void) const
+Py::Tuple SketchSolverPy::getGeometries(void) const
 {
-    return getSketchPtr()->getPyGeometry();
+    return getSketchSolverPtr()->getPyGeometry();
 }
 
-Py::Object SketchPy::getShape(void) const
+Py::Object SketchSolverPy::getShape(void) const
 {
-    return Py::Object(new TopoShapePy(new TopoShape(getSketchPtr()->toShape())));
+    return Py::Object(new TopoShapePy(new TopoShape(getSketchSolverPtr()->toShape())));
 }
 
 
 // +++ custom attributes implementer ++++++++++++++++++++++++++++++++++++++++
 
 
-PyObject *SketchPy::getCustomAttributes(const char* /*attr*/) const
+PyObject *SketchSolverPy::getCustomAttributes(const char* /*attr*/) const
 {
     return 0;
 }
 
-int SketchPy::setCustomAttributes(const char* /*attr*/, PyObject* /*obj*/)
+int SketchSolverPy::setCustomAttributes(const char* /*attr*/, PyObject* /*obj*/)
 {
     return 0; 
 }

@@ -87,13 +87,13 @@ double ConstraintEqual::error()
     return scale * ( value<param1>() - value<param2>() );
 }
 
-double ConstraintEqual::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<param1>()) deriv += 1;
-    if (param == index<param2>()) deriv += -1;
-    return scale * deriv;
-}
+//double ConstraintEqual::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<param1>()) deriv += 1;
+//    if (param == index<param2>()) deriv += -1;
+//    return scale * deriv;
+//}
 
 void ConstraintEqual::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -132,14 +132,14 @@ double ConstraintDifference::error()
     return scale * ( value<param2>() - value<param1>() - value<difference>() );
 }
 
-double ConstraintDifference::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<param1>()) deriv += -1;
-    if (param == index<param2>()) deriv += 1;
-    if (param == index<difference>()) deriv += -1;
-    return scale * deriv;
-}
+//double ConstraintDifference::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<param1>()) deriv += -1;
+//    if (param == index<param2>()) deriv += 1;
+//    if (param == index<difference>()) deriv += -1;
+//    return scale * deriv;
+//}
 
 void ConstraintDifference::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -182,23 +182,23 @@ double ConstraintP2PDistance::error()
     return scale * (d - dist);
 }
 
-double ConstraintP2PDistance::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<p1x>() || param == index<p1y>() ||
-        param == index<p2x>() || param == index<p2y>()) {
-        double dx = (value<p1x>() - value<p2x>());
-        double dy = (value<p1y>() - value<p2y>());
-        double d = sqrt(dx*dx + dy*dy);
-        if (param == index<p1x>()) deriv += dx/d;
-        if (param == index<p1y>()) deriv += dy/d;
-        if (param == index<p2x>()) deriv += -dx/d;
-        if (param == index<p2y>()) deriv += -dy/d;
-    }
-    if (param == value<distance>()) deriv += -1.;
-
-    return scale * deriv;
-}
+//double ConstraintP2PDistance::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<p1x>() || param == index<p1y>() ||
+//        param == index<p2x>() || param == index<p2y>()) {
+//        double dx = (value<p1x>() - value<p2x>());
+//        double dy = (value<p1y>() - value<p2y>());
+//        double d = sqrt(dx*dx + dy*dy);
+//        if (param == index<p1x>()) deriv += dx/d;
+//        if (param == index<p1y>()) deriv += dy/d;
+//        if (param == index<p2x>()) deriv += -dx/d;
+//        if (param == index<p2y>()) deriv += -dy/d;
+//    }
+//    if (param == value<distance>()) deriv += -1.;
+//
+//    return scale * deriv;
+//}
 
 void ConstraintP2PDistance::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -280,49 +280,47 @@ double ConstraintP2PAngle::error()
     return scale * atan2(y,x);
 }
 
-double ConstraintP2PAngle::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<p1x>() || param == index<p1y>() ||
-        param == index<p2x>() || param == index<p2y>()) {
-        double dx = (value<p2x>() - value<p1x>());
-        double dy = (value<p2y>() - value<p1y>());
-        double a = value<angle>() + da;
-        double ca = cos(a);
-        double sa = sin(a);
-        double x = dx*ca + dy*sa;
-        double y = -dx*sa + dy*ca;
-        double r2 = dx*dx+dy*dy;
-        dx = -y/r2;
-        dy = x/r2;
-        if (param == index<p1x>()) deriv += (-ca*dx + sa*dy);
-        if (param == index<p1y>()) deriv += (-sa*dx - ca*dy);
-        if (param == index<p2x>()) deriv += ( ca*dx - sa*dy);
-        if (param == index<p2y>()) deriv += ( sa*dx + ca*dy);
-    }
-    if (param == index<angle>()) deriv += -1;
-
-    return scale * deriv;
-}
+//double ConstraintP2PAngle::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<p1x>() || param == index<p1y>() ||
+//        param == index<p2x>() || param == index<p2y>()) {
+//        double dx = (value<p2x>() - value<p1x>());
+//        double dy = (value<p2y>() - value<p1y>());
+//        double a = value<angle>() + da;
+//        double ca = cos(a);
+//        double sa = sin(a);
+//        double x = dx*ca + dy*sa;
+//        double y = -dx*sa + dy*ca;
+//        double r2 = dx*dx+dy*dy;
+//        dx = -y/r2;
+//        dy = x/r2;
+//        if (param == index<p1x>()) deriv += (-ca*dx + sa*dy);
+//        if (param == index<p1y>()) deriv += (-sa*dx - ca*dy);
+//        if (param == index<p2x>()) deriv += ( ca*dx - sa*dy);
+//        if (param == index<p2y>()) deriv += ( sa*dx + ca*dy);
+//    }
+//    if (param == index<angle>()) deriv += -1;
+//
+//    return scale * deriv;
+//}
 
 void ConstraintP2PAngle::grad( std::vector< grad_component_t >& gradVec )
 {
+//	diff(err_P2PAngle,p1x) - (  scale*diff_y/(diff_x^2+diff_y^2));
+//	diff(err_P2PAngle,p1y) - (- scale*diff_x/(diff_x^2+diff_y^2));
+//	diff(err_P2PAngle,p2x) - (- scale*diff_y/(diff_x^2+diff_y^2));
+//	diff(err_P2PAngle,p2y) - (  scale*diff_x/(diff_x^2+diff_y^2));
     if(		is_dependent<p1x>() || is_dependent<p1y>() ||
     		is_dependent<p2x>() || is_dependent<p2y>()) {
         double diff_x = (value<p2x>() - value<p1x>());
         double diff_y = (value<p2y>() - value<p1y>());
-        double a = value<angle>() + da;
-        double ca = cos(a);
-        double sa = sin(a);
-        double x =  diff_x * ca + diff_y * sa;
-        double y = -diff_x * sa + diff_y * ca;
         double r2 = diff_x*diff_x + diff_y*diff_y;
-        double dx = -y/r2;
-        double dy =  x/r2;
-        dependent_insert<p1x>( gradVec, scale * (-ca*dx + sa*dy) );
-        dependent_insert<p1y>( gradVec, scale * (-sa*dx - ca*dy) );
-        dependent_insert<p2x>( gradVec, scale * ( ca*dx - sa*dy) );
-        dependent_insert<p2y>( gradVec, scale * ( sa*dx + ca*dy) );
+        double scale_factor = scale / r2;
+        dependent_insert<p1x>( gradVec,  scale_factor * diff_y );
+        dependent_insert<p1y>( gradVec, -scale_factor * diff_x );
+        dependent_insert<p2x>( gradVec, -scale_factor * diff_y );
+        dependent_insert<p2y>( gradVec,  scale_factor * diff_x );
     }
     dependent_insert<angle>( gradVec, -scale );
 
@@ -375,35 +373,35 @@ double ConstraintP2LDistance::error()
     return scale * (area/d - dist);
 }
 
-double ConstraintP2LDistance::grad(index_type param)
-{
-    double deriv=0.;
-    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
-    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
-    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
-    if (param == index<px>() || param == index<py>() ||
-        param == index<l_p1x>() || param == index<l_p1y>() ||
-        param == index<l_p2x>() || param == index<l_p2y>()) {
-        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
-        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
-        double dx = x2-x1;
-        double dy = y2-y1;
-        double d2 = dx*dx+dy*dy;
-        double d = sqrt(d2);
-        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
-        if (param == index<px>()) deriv += (y1-y2) / d;
-        if (param == index<py>()) deriv += (x2-x1) / d ;
-        if (param == index<l_p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
-        if (param == index<l_p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
-        if (param == index<l_p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
-        if (param == index<l_p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
-        if (area < 0)
-            deriv *= -1;
-    }
-    if (param == index<distance>()) deriv += -1;
-
-    return scale * deriv;
-}
+//double ConstraintP2LDistance::grad(index_type param)
+//{
+//    double deriv=0.;
+//    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
+//    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
+//    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
+//    if (param == index<px>() || param == index<py>() ||
+//        param == index<l_p1x>() || param == index<l_p1y>() ||
+//        param == index<l_p2x>() || param == index<l_p2y>()) {
+//        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+//        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
+//        double dx = x2-x1;
+//        double dy = y2-y1;
+//        double d2 = dx*dx+dy*dy;
+//        double d = sqrt(d2);
+//        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
+//        if (param == index<px>()) deriv += (y1-y2) / d;
+//        if (param == index<py>()) deriv += (x2-x1) / d ;
+//        if (param == index<l_p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
+//        if (param == index<l_p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
+//        if (param == index<l_p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
+//        if (param == index<l_p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
+//        if (area < 0)
+//            deriv *= -1;
+//    }
+//    if (param == index<distance>()) deriv += -1;
+//
+//    return scale * deriv;
+//}
 
 void ConstraintP2LDistance::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -502,31 +500,31 @@ double ConstraintPointOnLine::error()
     return scale * area/d;
 }
 
-double ConstraintPointOnLine::grad(index_type param)
-{
-    double deriv=0.;
-    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
-    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
-    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
-    if (param == index<px>() || param == index<py>() ||
-        param == index<l_p1x>() || param == index<l_p1y>() ||
-        param == index<l_p2x>() || param == index<l_p2y>()) {
-        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
-        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
-        double dx = x2-x1;
-        double dy = y2-y1;
-        double d2 = dx*dx+dy*dy;
-        double d = sqrt(d2);
-        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
-        if (param == index<px>()) deriv += (y1-y2) / d;
-        if (param == index<py>()) deriv += (x2-x1) / d ;
-        if (param == index<l_p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
-        if (param == index<l_p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
-        if (param == index<l_p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
-        if (param == index<l_p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
-    }
-    return scale * deriv;
-}
+//double ConstraintPointOnLine::grad(index_type param)
+//{
+//    double deriv=0.;
+//    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
+//    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
+//    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
+//    if (param == index<px>() || param == index<py>() ||
+//        param == index<l_p1x>() || param == index<l_p1y>() ||
+//        param == index<l_p2x>() || param == index<l_p2y>()) {
+//        double x0= value<px>(), x1= value<l_p1x>(), x2= value<l_p2x>();
+//        double y0= value<py>(), y1= value<l_p1y>(), y2= value<l_p2y>();
+//        double dx = x2-x1;
+//        double dy = y2-y1;
+//        double d2 = dx*dx+dy*dy;
+//        double d = sqrt(d2);
+//        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
+//        if (param == index<px>()) deriv += (y1-y2) / d;
+//        if (param == index<py>()) deriv += (x2-x1) / d ;
+//        if (param == index<l_p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
+//        if (param == index<l_p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
+//        if (param == index<l_p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
+//        if (param == index<l_p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
+//    }
+//    return scale * deriv;
+//}
 
 void ConstraintPointOnLine::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -590,29 +588,29 @@ double ConstraintPointOnPerpBisector::error()
     return scale * (sqrt(dx1*dx1+dy1*dy1) - sqrt(dx2*dx2+dy2*dy2));
 }
 
-double ConstraintPointOnPerpBisector::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<p0x>() || param == index<p0y>() ||
-        param == index<p1x>() || param == index<p1y>()) {
-        double dx1 = value<p1x>() - value<p0x>();
-        double dy1 = value<p1y>() - value<p0y>();
-        if (param == index<p0x>()) deriv -= dx1/sqrt(dx1*dx1+dy1*dy1);
-        if (param == index<p0y>()) deriv -= dy1/sqrt(dx1*dx1+dy1*dy1);
-        if (param == index<p1x>()) deriv += dx1/sqrt(dx1*dx1+dy1*dy1);
-        if (param == index<p1y>()) deriv += dy1/sqrt(dx1*dx1+dy1*dy1);
-    }
-    if (param == index<p0x>() || param == index<p0y>() ||
-        param == index<p2x>() || param == index<p2y>()) {
-        double dx2 = value<p2x>() - value<p0x>();
-        double dy2 = value<p2y>() - value<p0y>();
-        if (param == index<p0x>()) deriv += dx2/sqrt(dx2*dx2+dy2*dy2);
-        if (param == index<p0y>()) deriv += dy2/sqrt(dx2*dx2+dy2*dy2);
-        if (param == index<p2x>()) deriv -= dx2/sqrt(dx2*dx2+dy2*dy2);
-        if (param == index<p2y>()) deriv -= dy2/sqrt(dx2*dx2+dy2*dy2);
-    }
-    return scale * deriv;
-}
+//double ConstraintPointOnPerpBisector::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<p0x>() || param == index<p0y>() ||
+//        param == index<p1x>() || param == index<p1y>()) {
+//        double dx1 = value<p1x>() - value<p0x>();
+//        double dy1 = value<p1y>() - value<p0y>();
+//        if (param == index<p0x>()) deriv -= dx1/sqrt(dx1*dx1+dy1*dy1);
+//        if (param == index<p0y>()) deriv -= dy1/sqrt(dx1*dx1+dy1*dy1);
+//        if (param == index<p1x>()) deriv += dx1/sqrt(dx1*dx1+dy1*dy1);
+//        if (param == index<p1y>()) deriv += dy1/sqrt(dx1*dx1+dy1*dy1);
+//    }
+//    if (param == index<p0x>() || param == index<p0y>() ||
+//        param == index<p2x>() || param == index<p2y>()) {
+//        double dx2 = value<p2x>() - value<p0x>();
+//        double dy2 = value<p2y>() - value<p0y>();
+//        if (param == index<p0x>()) deriv += dx2/sqrt(dx2*dx2+dy2*dy2);
+//        if (param == index<p0y>()) deriv += dy2/sqrt(dx2*dx2+dy2*dy2);
+//        if (param == index<p2x>()) deriv -= dx2/sqrt(dx2*dx2+dy2*dy2);
+//        if (param == index<p2y>()) deriv -= dy2/sqrt(dx2*dx2+dy2*dy2);
+//    }
+//    return scale * deriv;
+//}
 
 void ConstraintPointOnPerpBisector::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -679,21 +677,21 @@ double ConstraintParallel::error()
     return scale * (dx1*dy2 - dy1*dx2);
 }
 
-double ConstraintParallel::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<l1p1x>()) deriv +=  (value<l2p1y>() - value<l2p2y>()); // = dy2
-    if (param == index<l1p2x>()) deriv += -(value<l2p1y>() - value<l2p2y>()); // = -dy2
-    if (param == index<l1p1y>()) deriv += -(value<l2p1x>() - value<l2p2x>()); // = -dx2
-    if (param == index<l1p2y>()) deriv +=  (value<l2p1x>() - value<l2p2x>()); // = dx2
-
-    if (param == index<l2p1x>()) deriv += -(value<l1p1y>() - value<l1p2y>()); // = -dy1
-    if (param == index<l2p2x>()) deriv +=  (value<l1p1y>() - value<l1p2y>()); // = dy1
-    if (param == index<l2p1y>()) deriv +=  (value<l1p1x>() - value<l1p2x>()); // = dx1
-    if (param == index<l2p2y>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
-
-    return scale * deriv;
-}
+//double ConstraintParallel::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<l1p1x>()) deriv +=  (value<l2p1y>() - value<l2p2y>()); // = dy2
+//    if (param == index<l1p2x>()) deriv += -(value<l2p1y>() - value<l2p2y>()); // = -dy2
+//    if (param == index<l1p1y>()) deriv += -(value<l2p1x>() - value<l2p2x>()); // = -dx2
+//    if (param == index<l1p2y>()) deriv +=  (value<l2p1x>() - value<l2p2x>()); // = dx2
+//
+//    if (param == index<l2p1x>()) deriv += -(value<l1p1y>() - value<l1p2y>()); // = -dy1
+//    if (param == index<l2p2x>()) deriv +=  (value<l1p1y>() - value<l1p2y>()); // = dy1
+//    if (param == index<l2p1y>()) deriv +=  (value<l1p1x>() - value<l1p2x>()); // = dx1
+//    if (param == index<l2p2y>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
+//
+//    return scale * deriv;
+//}
 
 void ConstraintParallel::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -752,21 +750,21 @@ double ConstraintPerpendicular::error()
     return scale * (dx1*dx2 + dy1*dy2);
 }
 
-double ConstraintPerpendicular::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<l1p1x>()) deriv +=  (value<l2p1x>() - value<l2p2x>()); // = dx2
-    if (param == index<l1p2x>()) deriv += -(value<l2p1x>() - value<l2p2x>()); // = -dx2
-    if (param == index<l1p1y>()) deriv +=  (value<l2p1y>() - value<l2p2y>()); // = dy2
-    if (param == index<l1p2y>()) deriv += -(value<l2p1y>() - value<l2p2y>()); // = -dy2
-
-    if (param == index<l2p1x>()) deriv +=  (value<l1p1x>() - value<l1p2x>()); // = dx1
-    if (param == index<l2p2x>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
-    if (param == index<l2p1y>()) deriv +=  (value<l1p1y>() - value<l1p2y>()); // = dy1
-    if (param == index<l2p2y>()) deriv += -(value<l1p1y>() - value<l1p2y>()); // = -dy1
-
-    return scale * deriv;
-}
+//double ConstraintPerpendicular::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<l1p1x>()) deriv +=  (value<l2p1x>() - value<l2p2x>()); // = dx2
+//    if (param == index<l1p2x>()) deriv += -(value<l2p1x>() - value<l2p2x>()); // = -dx2
+//    if (param == index<l1p1y>()) deriv +=  (value<l2p1y>() - value<l2p2y>()); // = dy2
+//    if (param == index<l1p2y>()) deriv += -(value<l2p1y>() - value<l2p2y>()); // = -dy2
+//
+//    if (param == index<l2p1x>()) deriv +=  (value<l1p1x>() - value<l1p2x>()); // = dx1
+//    if (param == index<l2p2x>()) deriv += -(value<l1p1x>() - value<l1p2x>()); // = -dx1
+//    if (param == index<l2p1y>()) deriv +=  (value<l1p1y>() - value<l1p2y>()); // = dy1
+//    if (param == index<l2p2y>()) deriv += -(value<l1p1y>() - value<l1p2y>()); // = -dy1
+//
+//    return scale * deriv;
+//}
 
 void ConstraintPerpendicular::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -817,84 +815,85 @@ double ConstraintL2LAngle::error()
     double dy1 = (value<l1p2y>() - value<l1p1y>());
     double dx2 = (value<l2p2x>() - value<l2p1x>());
     double dy2 = (value<l2p2y>() - value<l2p1y>());
-    double a = atan2(dy1,dx1) + value<angle>();
-    double ca = cos(a);
-    double sa = sin(a);
-    double x2 = dx2*ca + dy2*sa;
-    double y2 = -dx2*sa + dy2*ca;
+    double ca = cos( value<angle>() );
+    double sa = sin( value<angle>() );
+    double rx1 = dx1*ca - dy1*sa;
+    double ry1 = dy1*ca + dx1*sa;
+    double x2 =  dx2*rx1 + dy2*ry1;
+    double y2 = -dx2*ry1 + dy2*rx1;
     return scale * atan2(y2,x2);
 }
 
-double ConstraintL2LAngle::grad(index_type param)
-{
-    double deriv=0.;
-    if (param == index<l1p1x>() || param == index<l1p1y>() ||
-        param == index<l1p2x>() || param == index<l1p2y>()) {
-        double dx1 = (value<l1p2x>() - value<l1p1x>());
-        double dy1 = (value<l1p2y>() - value<l1p1y>());
-        double r2 = dx1*dx1+dy1*dy1;
-        if (param == index<l1p1x>()) deriv += -dy1/r2;
-        if (param == index<l1p1y>()) deriv += dx1/r2;
-        if (param == index<l1p2x>()) deriv += dy1/r2;
-        if (param == index<l1p2y>()) deriv += -dx1/r2;
-    }
-    if (param == index<l2p1x>() || param == index<l2p1y>() ||
-        param == index<l2p2x>() || param == index<l2p2y>()) {
-        double dx1 = (value<l1p2x>() - value<l1p1x>());
-        double dy1 = (value<l1p2y>() - value<l1p1y>());
-        double dx2 = (value<l2p2x>() - value<l2p1x>());
-        double dy2 = (value<l2p2y>() - value<l2p1y>());
-        double a = atan2(dy1,dx1) + value<angle>();
-        double ca = cos(a);
-        double sa = sin(a);
-        double x2 = dx2*ca + dy2*sa;
-        double y2 = -dx2*sa + dy2*ca;
-        double r2 = dx2*dx2+dy2*dy2;
-        dx2 = -y2/r2;
-        dy2 = x2/r2;
-        if (param == index<l2p1x>()) deriv += (-ca*dx2 + sa*dy2);
-        if (param == index<l2p1y>()) deriv += (-sa*dx2 - ca*dy2);
-        if (param == index<l2p2x>()) deriv += ( ca*dx2 - sa*dy2);
-        if (param == index<l2p2y>()) deriv += ( sa*dx2 + ca*dy2);
-    }
-    if (param == index<angle>()) deriv += -1;
-
-    return scale * deriv;
-}
+//double ConstraintL2LAngle::grad(index_type param)
+//{
+//    double deriv=0.;
+//    if (param == index<l1p1x>() || param == index<l1p1y>() ||
+//        param == index<l1p2x>() || param == index<l1p2y>()) {
+//        double dx1 = (value<l1p2x>() - value<l1p1x>());
+//        double dy1 = (value<l1p2y>() - value<l1p1y>());
+//        double r2 = dx1*dx1+dy1*dy1;
+//        if (param == index<l1p1x>()) deriv += -dy1/r2;
+//        if (param == index<l1p1y>()) deriv += dx1/r2;
+//        if (param == index<l1p2x>()) deriv += dy1/r2;
+//        if (param == index<l1p2y>()) deriv += -dx1/r2;
+//    }
+//    if (param == index<l2p1x>() || param == index<l2p1y>() ||
+//        param == index<l2p2x>() || param == index<l2p2y>()) {
+//        double dx1 = (value<l1p2x>() - value<l1p1x>());
+//        double dy1 = (value<l1p2y>() - value<l1p1y>());
+//        double dx2 = (value<l2p2x>() - value<l2p1x>());
+//        double dy2 = (value<l2p2y>() - value<l2p1y>());
+//        double a = atan2(dy1,dx1) + value<angle>();
+//        double ca = cos(a);
+//        double sa = sin(a);
+//        double x2 = dx2*ca + dy2*sa;
+//        double y2 = -dx2*sa + dy2*ca;
+//        double r2 = dx2*dx2+dy2*dy2;
+//        dx2 = -y2/r2;
+//        dy2 = x2/r2;
+//        if (param == index<l2p1x>()) deriv += (-ca*dx2 + sa*dy2);
+//        if (param == index<l2p1y>()) deriv += (-sa*dx2 - ca*dy2);
+//        if (param == index<l2p2x>()) deriv += ( ca*dx2 - sa*dy2);
+//        if (param == index<l2p2y>()) deriv += ( sa*dx2 + ca*dy2);
+//    }
+//    if (param == index<angle>()) deriv += -1;
+//
+//    return scale * deriv;
+//}
 
 void ConstraintL2LAngle::grad( std::vector< grad_component_t >& gradVec )
 {
-    if(		is_dependent<l1p1x>() 	|| is_dependent<l1p1y>() ||
+//    diff(err_L2LAngle,l1p1x) - (- scale*dy1/(dx1^2+dy1^2))=0;
+//    diff(err_L2LAngle,l1p1y) - (  scale*dx1/(dx1^2+dy1^2))=0;
+//    diff(err_L2LAngle,l1p2x) - (  scale*dy1/(dx1^2+dy1^2))=0;
+//    diff(err_L2LAngle,l1p2y) - (- scale*dx1/(dx1^2+dy1^2))=0;
+	if(		is_dependent<l1p1x>() 	|| is_dependent<l1p1y>() ||
     		is_dependent<l1p2x>() 	|| is_dependent<l1p2y>())
-    {
-        double dx1 = (value<l1p2x>() - value<l1p1x>());
-        double dy1 = (value<l1p2y>() - value<l1p1y>());
-        double r2 = dx1*dx1+dy1*dy1;
-        double scale_factor = scale / r2;
-        dependent_insert<l1p1x>( gradVec, -scale_factor * dy1 );
-        dependent_insert<l1p1y>( gradVec,  scale_factor * dx1 );
-        dependent_insert<l1p2x>( gradVec,  scale_factor * dy1 );
-        dependent_insert<l1p2y>( gradVec, -scale_factor * dx1 );
-    }
-    if(		is_dependent<l2p1x>() 	|| is_dependent<l2p1y>() ||
-    		is_dependent<l2p2x>() 	|| is_dependent<l2p2y>())
     {
         double diff_x1 = (value<l1p2x>() - value<l1p1x>());
         double diff_y1 = (value<l1p2y>() - value<l1p1y>());
+        double r1sqr = diff_x1*diff_x1 + diff_y1*diff_y1;
+        double scale_factor = scale / r1sqr;
+        dependent_insert<l1p1x>( gradVec, -scale_factor * diff_y1 );
+        dependent_insert<l1p1y>( gradVec,  scale_factor * diff_x1 );
+        dependent_insert<l1p2x>( gradVec,  scale_factor * diff_y1 );
+        dependent_insert<l1p2y>( gradVec, -scale_factor * diff_x1 );
+    }
+//    diff(err_L2LAngle,l2p1x) - (  scale*dy2/(dx2^2+dy2^2))=0;
+//    diff(err_L2LAngle,l2p1y) - (- scale*dx2/(dx2^2+dy2^2))=0;
+//    diff(err_L2LAngle,l2p2x) - (- scale*dy2/(dx2^2+dy2^2))=0;
+//    diff(err_L2LAngle,l2p2y) - (  scale*dx2/(dx2^2+dy2^2))=0;
+    if(		is_dependent<l2p1x>() 	|| is_dependent<l2p1y>() ||
+    		is_dependent<l2p2x>() 	|| is_dependent<l2p2y>())
+    {
         double diff_x2 = (value<l2p2x>() - value<l2p1x>());
         double diff_y2 = (value<l2p2y>() - value<l2p1y>());
-        double a = atan2(diff_y1,diff_x1) + value<angle>();
-        double ca = cos(a);
-        double sa = sin(a);
-        double x2 =  diff_x2 * ca + diff_y2 * sa;
-        double y2 = -diff_x2 * sa + diff_y2 * ca;
-        double r2 = diff_x2*diff_x2 + diff_y2*diff_y2;
-        double dx2 = -y2/r2;
-        double dy2 =  x2/r2;
-        dependent_insert<l2p1x>( gradVec, scale * (-ca*dx2 + sa*dy2) );
-        dependent_insert<l2p1y>( gradVec, scale * (-sa*dx2 - ca*dy2) );
-        dependent_insert<l2p2x>( gradVec, scale * ( ca*dx2 - sa*dy2) );
-        dependent_insert<l2p2y>( gradVec, scale * ( sa*dx2 + ca*dy2) );
+        double r2sqr = diff_x2*diff_x2 + diff_y2*diff_y2;
+        double scale_factor = scale / r2sqr;
+        dependent_insert<l2p1x>( gradVec,  scale_factor * diff_y2 );
+        dependent_insert<l2p1y>( gradVec, -scale_factor * diff_x2 );
+        dependent_insert<l2p2x>( gradVec, -scale_factor * diff_y2 );
+        dependent_insert<l2p2y>( gradVec,  scale_factor * diff_x2 );
     }
     dependent_insert<angle>( gradVec, -scale );
 }
@@ -948,36 +947,36 @@ double ConstraintMidpointOnLine::error()
     return scale * area/d;
 }
 
-double ConstraintMidpointOnLine::grad(index_type param)
-{
-    double deriv=0.;
-    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
-    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
-    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
-    if (param == index<l1p1x>() || param == index<l1p1y>() ||
-        param == index<l1p2x>() || param == index<l1p2y>()||
-        param == index<l2p1x>() || param == index<l2p1y>() ||
-        param == index<l2p2x>() || param == index<l2p2y>()) {
-        double x0=((value<l1p1x>())+(value<l1p2x>()))/2;
-        double y0=((value<l1p1y>())+(value<l1p2y>()))/2;
-        double x1=value<l2p1x>(), x2=value<l2p2x>();
-        double y1=value<l2p1y>(), y2=value<l2p2y>();
-        double dx = x2-x1;
-        double dy = y2-y1;
-        double d2 = dx*dx+dy*dy;
-        double d = sqrt(d2);
-        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
-        if (param == index<l1p1x>()) deriv += (y1-y2) / (2*d);
-        if (param == index<l1p1y>()) deriv += (x2-x1) / (2*d);
-        if (param == index<l1p2x>()) deriv += (y1-y2) / (2*d);
-        if (param == index<l1p2y>()) deriv += (x2-x1) / (2*d);
-        if (param == index<l2p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
-        if (param == index<l2p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
-        if (param == index<l2p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
-        if (param == index<l2p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
-    }
-    return scale * deriv;
-}
+//double ConstraintMidpointOnLine::grad(index_type param)
+//{
+//    double deriv=0.;
+//    // darea/dx0 = (y1-y2)      darea/dy0 = (x2-x1)
+//    // darea/dx1 = (y2-y0)      darea/dy1 = (x0-x2)
+//    // darea/dx2 = (y0-y1)      darea/dy2 = (x1-x0)
+//    if (param == index<l1p1x>() || param == index<l1p1y>() ||
+//        param == index<l1p2x>() || param == index<l1p2y>()||
+//        param == index<l2p1x>() || param == index<l2p1y>() ||
+//        param == index<l2p2x>() || param == index<l2p2y>()) {
+//        double x0=((value<l1p1x>())+(value<l1p2x>()))/2;
+//        double y0=((value<l1p1y>())+(value<l1p2y>()))/2;
+//        double x1=value<l2p1x>(), x2=value<l2p2x>();
+//        double y1=value<l2p1y>(), y2=value<l2p2y>();
+//        double dx = x2-x1;
+//        double dy = y2-y1;
+//        double d2 = dx*dx+dy*dy;
+//        double d = sqrt(d2);
+//        double area = -x0*dy+y0*dx+x1*y2-x2*y1;
+//        if (param == index<l1p1x>()) deriv += (y1-y2) / (2*d);
+//        if (param == index<l1p1y>()) deriv += (x2-x1) / (2*d);
+//        if (param == index<l1p2x>()) deriv += (y1-y2) / (2*d);
+//        if (param == index<l1p2y>()) deriv += (x2-x1) / (2*d);
+//        if (param == index<l2p1x>()) deriv += ((y2-y0)*d + (dx/d)*area) / d2;
+//        if (param == index<l2p1y>()) deriv += ((x0-x2)*d + (dy/d)*area) / d2;
+//        if (param == index<l2p2x>()) deriv += ((y0-y1)*d - (dx/d)*area) / d2;
+//        if (param == index<l2p2y>()) deriv += ((x1-x0)*d - (dy/d)*area) / d2;
+//    }
+//    return scale * deriv;
+//}
 
 void ConstraintMidpointOnLine::grad( std::vector< grad_component_t >& gradVec )
 {
@@ -1053,30 +1052,30 @@ double ConstraintTangentCircumf::error()
         return scale * (sqrt(dx*dx + dy*dy) - ( value<r1>() + value<r2>() ));
 }
 
-double ConstraintTangentCircumf::grad( index_type param )
-{
-    double deriv=0.;
-    if (param == index<c1x>() || param == index<c1y>() ||
-        param == index<c2x>() || param == index<c2y>()||
-        param == index<r1>() || param == index<r2>()) {
-        double dx = (value<c1x>() - value<c2x>());
-        double dy = (value<c1y>() - value<c2y>());
-        double d = sqrt(dx*dx + dy*dy);
-        if (param == index<c1x>()) deriv += dx/d;
-        if (param == index<c1y>()) deriv += dy/d;
-        if (param == index<c2x>()) deriv += -dx/d;
-        if (param == index<c2y>()) deriv += -dy/d;
-        if (internal) {
-            if (param == index<r1>()) deriv += (value<r1>() > value<r2>()) ? -1 : 1;
-            if (param == index<r2>()) deriv += (value<r1>() > value<r2>()) ? 1 : -1;
-        }
-        else {
-            if (param == index<r1>()) deriv += -1;
-            if (param == index<r2>()) deriv += -1;
-        }
-    }
-    return scale * deriv;
-}
+//double ConstraintTangentCircumf::grad( index_type param )
+//{
+//    double deriv=0.;
+//    if (param == index<c1x>() || param == index<c1y>() ||
+//        param == index<c2x>() || param == index<c2y>()||
+//        param == index<r1>() || param == index<r2>()) {
+//        double dx = (value<c1x>() - value<c2x>());
+//        double dy = (value<c1y>() - value<c2y>());
+//        double d = sqrt(dx*dx + dy*dy);
+//        if (param == index<c1x>()) deriv += dx/d;
+//        if (param == index<c1y>()) deriv += dy/d;
+//        if (param == index<c2x>()) deriv += -dx/d;
+//        if (param == index<c2y>()) deriv += -dy/d;
+//        if (internal) {
+//            if (param == index<r1>()) deriv += (value<r1>() > value<r2>()) ? -1 : 1;
+//            if (param == index<r2>()) deriv += (value<r1>() > value<r2>()) ? 1 : -1;
+//        }
+//        else {
+//            if (param == index<r1>()) deriv += -1;
+//            if (param == index<r2>()) deriv += -1;
+//        }
+//    }
+//    return scale * deriv;
+//}
 
 void ConstraintTangentCircumf::grad( std::vector< grad_component_t >& gradVec )
 {

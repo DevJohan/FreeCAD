@@ -92,6 +92,7 @@ public:
 protected:
 	void paintEvent(QPaintEvent* event);
 private:
+	int value2line( double value );
 	SImage<rgb8> imageData;
 	QImage graph;
 	int current_update;

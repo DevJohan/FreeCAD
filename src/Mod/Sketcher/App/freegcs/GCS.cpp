@@ -30,6 +30,10 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 
+#define BaseExport
+#include <Base/Console.h>
+#include <Base/TimeInfo.h>
+
 // http://forum.freecadweb.org/viewtopic.php?f=3&t=4651&start=40
 namespace Eigen {
 
@@ -707,16 +711,23 @@ void System::initSolution()
     //   tag ids >=0 and < 0 respectively and applies the
     //   system reduction specified in the previous step
 
+
     isInit = false;
     if (!hasUnknowns)
         return;
+
+    Base::TimeInfo start_time;
 
     // storing reference configuration
     setReference();
     
     // diagnose conflicting or redundant constraints
     if (!hasDiagnosis) {
-        diagnose();
+        Base::TimeInfo diag_start_time;
+    	diagnose();
+        Base::TimeInfo diag_end_time;
+        Base::Console().Message( "GCS::diagnose took %f\n",  Base::TimeInfo::diffTimeF(diag_start_time,diag_end_time) );
+
         if (!hasDiagnosis)
             return;
     }
@@ -819,6 +830,9 @@ void System::initSolution()
         if (clist1.size() > 0)
             subSystemsAux[cid] = new SubSystem(clist1, plists[cid], reductionmaps[cid]);
     }
+
+    Base::TimeInfo end_time;
+    Base::Console().Message( "GCS::initSolution took %f\n",  Base::TimeInfo::diffTimeF(start_time,end_time) );
 
     isInit = true;
 }
@@ -1540,42 +1554,42 @@ int System::diagnose()
                 }
             }
 
-            std::vector<Constraint *> clistTmp;
-            clistTmp.reserve(clist.size());
-            for (std::vector<Constraint *>::iterator constr=clist.begin();
-                 constr != clist.end(); ++constr)
-                if (skipped.count(*constr) == 0)
-                    clistTmp.push_back(*constr);
-
-            SubSystem *subSysTmp = new SubSystem(clistTmp, plist);
-            int res = solve(subSysTmp);
-            if (res == Success) {
-                subSysTmp->applySolution();
-                for (std::set<Constraint *>::const_iterator constr=skipped.begin();
-                     constr != skipped.end(); constr++) {
-                    double err = (*constr)->error();
-                    if (err * err < XconvergenceFine)
-                        redundant.insert(*constr);
-                }
-                resetToReference();
-
-                std::vector< std::vector<Constraint *> > conflictGroupsOrig=conflictGroups;
-                conflictGroups.clear();
-                for (int i=conflictGroupsOrig.size()-1; i >= 0; i--) {
-                    bool isRedundant = false;
-                    for (int j=0; j < conflictGroupsOrig[i].size(); j++) {
-                        if (redundant.count(conflictGroupsOrig[i][j]) > 0) {
-                            isRedundant = true;
-                            break;
-                        }
-                    }
-                    if (!isRedundant)
-                        conflictGroups.push_back(conflictGroupsOrig[i]);
-                    else
-                        constrNum--;
-                }
-            }
-            delete subSysTmp;
+//            std::vector<Constraint *> clistTmp;
+//            clistTmp.reserve(clist.size());
+//            for (std::vector<Constraint *>::iterator constr=clist.begin();
+//                 constr != clist.end(); ++constr)
+//                if (skipped.count(*constr) == 0)
+//                    clistTmp.push_back(*constr);
+//
+//            SubSystem *subSysTmp = new SubSystem(clistTmp, plist);
+//            int res = solve(subSysTmp);
+//            if (res == Success) {
+//                subSysTmp->applySolution();
+//                for (std::set<Constraint *>::const_iterator constr=skipped.begin();
+//                     constr != skipped.end(); constr++) {
+//                    double err = (*constr)->error();
+//                    if (err * err < XconvergenceFine)
+//                        redundant.insert(*constr);
+//                }
+//                resetToReference();
+//
+//                std::vector< std::vector<Constraint *> > conflictGroupsOrig=conflictGroups;
+//                conflictGroups.clear();
+//                for (int i=conflictGroupsOrig.size()-1; i >= 0; i--) {
+//                    bool isRedundant = false;
+//                    for (int j=0; j < conflictGroupsOrig[i].size(); j++) {
+//                        if (redundant.count(conflictGroupsOrig[i][j]) > 0) {
+//                            isRedundant = true;
+//                            break;
+//                        }
+//                    }
+//                    if (!isRedundant)
+//                        conflictGroups.push_back(conflictGroupsOrig[i]);
+//                    else
+//                        constrNum--;
+//                }
+//            }
+//            delete subSysTmp;
 
             // simplified output of conflicting tags
             SET_I conflictingTagsSet;

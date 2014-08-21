@@ -30,6 +30,7 @@ generate_from_xml(SketchObjectSFPy)
 generate_from_xml(SketchObjectPy)
 generate_from_xml(ConstraintPy)
 generate_from_xml(SketchPy)
+generate_from_xml(SketchSolverPy)
 
 
 SET(Properties_SRCS
@@ -54,6 +55,8 @@ SET(Datatypes_SRCS
     Sketch.h
     Sketch_exp.cpp
     Sketch_exp.h
+    SketchSolver.cpp
+    SketchSolver.h
 )
 SOURCE_GROUP("Datatypes" FILES ${Datatypes_SRCS})
 
@@ -66,6 +69,8 @@ SET(Python_SRCS
     ConstraintPy.xml
     SketchPy.xml
     SketchPyImp.cpp
+    SketchSolverPy.xml
+    SketchSolverPyImp.cpp
 )
 SOURCE_GROUP("Python" FILES ${Python_SRCS})
 
