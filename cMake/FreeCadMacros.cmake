@@ -311,3 +311,27 @@ MACRO(GET_OCC_VERSION_HEX)
         set (OCC_VERSION_HEX "0x0${OCC_MAJOR_EXITCODE}0${OCC_MINOR_EXITCODE}0${OCC_MICRO_EXITCODE}")
     endif()
 ENDMACRO(GET_OCC_VERSION_HEX)
+
+# check if the the generated source directories exist and
+# that they are in CMAKE_CURRENT_BINARY_DIR or a subdir thereof.
+# If target dir is correct make sure it exists.
+MACRO (fc_check_target_dirs outfiles )
+    STRING(LENGTH ${CMAKE_CURRENT_BINARY_DIR} _bindir_length)
+    MATH(EXPR _outfile_min_length "${_bindir_length}+2")
+    MATH(EXPR _outfile_comp_length "${_bindir_length}+1")
+    FOREACH(outfile ${outfiles})
+        STRING(LENGTH ${outfile} _outfile_length)
+		IF(_outfile_length LESS _outfile_min_length)
+            message( FATAL_ERROR "fc_check_target_dirs only allows path to be a subpath of CMAKE_CURRENT_BINARY_DIR" )
+        ENDIF(_outfile_length LESS _outfile_min_length)
+
+        STRING(SUBSTRING ${outfile} 0 ${_outfile_comp_length} _outfile_begin )
+        IF( _outfile_begin STREQUAL "${CMAKE_CURRENT_BINARY_DIR}/")
+            GET_FILENAME_COMPONENT(outpath ${outfile} PATH)
+            FILE(MAKE_DIRECTORY ${outpath})
+        ELSE( _outfile_begin STREQUAL "${CMAKE_CURRENT_BINARY_DIR}/")
+            message( FATAL_ERROR "fc_check_target_dirs only allows path to be a subpath of CMAKE_CURRENT_BINARY_DIR" )
+        ENDIF( _outfile_begin STREQUAL "${CMAKE_CURRENT_BINARY_DIR}/")
+    ENDFOREACH(outfile ${outfiles})
+ENDMACRO (fc_check_target_dirs )
+
