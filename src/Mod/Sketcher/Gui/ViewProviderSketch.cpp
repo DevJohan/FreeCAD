@@ -3029,48 +3029,11 @@ void ViewProviderSketch::draw(bool temp)
     		}
     	}
 
-<<<<<<< HEAD
-    }
-
-    edit->CurvesCoordinate->point.setNum(Coords.size());
-    edit->CurveSet->numVertices.setNum(Index.size());
-    edit->CurvesMaterials->diffuseColor.setNum(Index.size());
-    edit->PointsCoordinate->point.setNum(Points.size());
-    edit->PointsMaterials->diffuseColor.setNum(Points.size());
-    
-    SbVec3f *verts = edit->CurvesCoordinate->point.startEditing();
-    int32_t *index = edit->CurveSet->numVertices.startEditing();
-    SbVec3f *pverts = edit->PointsCoordinate->point.startEditing();
-
-    int i=0; // setting up the line set
-    for (std::vector<Base::Vector3d>::const_iterator it = Coords.begin(); it != Coords.end(); ++it,i++)
-      verts[i].setValue(it->x,it->y,zLines);
-    
-    i=0; // setting up the indexes of the line set
-    for (std::vector<unsigned int>::const_iterator it = Index.begin(); it != Index.end(); ++it,i++)
-        index[i] = *it;
-
-    i=0; // setting up the point set
-    for (std::vector<Base::Vector3d>::const_iterator it = Points.begin(); it != Points.end(); ++it,i++)
-        pverts[i].setValue(it->x,it->y,zPoints);
-
-    edit->CurvesCoordinate->point.finishEditing();
-    edit->CurveSet->numVertices.finishEditing();
-    edit->PointsCoordinate->point.finishEditing();
-
-    {
-        edit->CurvesCoordinate_exp->point.setNum(Coords.size());
-        edit->CurveSet_exp->numVertices.setNum(Index.size());
-        edit->CurvesMaterials_exp->diffuseColor.setNum(Index.size());
-        edit->PointsCoordinate_exp->point.setNum(Points.size());
-        edit->PointsMaterials_exp->diffuseColor.setNum(Points.size());
-=======
         edit->CurvesCoordinate_exp->point.setNum(Coords_exp.size());
         edit->CurveSet_exp->numVertices.setNum(Index_exp.size());
         edit->CurvesMaterials_exp->diffuseColor.setNum(Index_exp.size());
         edit->PointsCoordinate_exp->point.setNum(Points_exp.size());
         edit->PointsMaterials_exp->diffuseColor.setNum(Points_exp.size());
->>>>>>> Abstracting SketchSolver from Sketch to allow interchangable use of experimental sketcher
 
         SbVec3f *verts_exp = edit->CurvesCoordinate_exp->point.startEditing();
         int32_t *index_exp = edit->CurveSet_exp->numVertices.startEditing();

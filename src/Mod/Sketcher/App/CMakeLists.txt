@@ -1,3 +1,7 @@
+cmake_minimum_required(VERSION 2.8)
+find_package(BISON)
+find_package(FLEX)
+
 if(MSVC)
     add_definitions(-DFCAppSketcher -DHAVE_ACOSH -DHAVE_ASINH -DHAVE_ATANH)
 else(MSVC)
@@ -106,6 +110,23 @@ SET(FreeGCS_EXP_SRCS
 )
 SOURCE_GROUP("FreeGCS_EXP" FILES ${FreeGCS_EXP_SRCS})
 
+
+BISON_TARGET(QuantityParserExp ${CMAKE_CURRENT_SOURCE_DIR}/expressions/QuantityParserExp.y ${CMAKE_CURRENT_BINARY_DIR}/expressions/QuantityParserExp.cpp)
+FLEX_TARGET( QuantityLexerExp  ${CMAKE_CURRENT_SOURCE_DIR}/expressions/QuantityLexerExp.l  ${CMAKE_CURRENT_BINARY_DIR}/expressions/QuantityLexerExp.cpp )
+ADD_FLEX_BISON_DEPENDENCY(QuantityLexerExp QuantityParserExp)
+SET(ExpressionParser_SRCS
+	${BISON_QuantityParserExp_OUTPUTS} 
+	${FLEX_QuantityLexerExp_OUTPUTS}
+)
+fc_check_target_dirs( ${ExpressionParser_SRCS} )
+
+SET(Expressions_SRCS
+	${ExpressionParser_SRCS}
+	expressions/ScaledUnit.cpp
+	expressions/ScaledUnit.h
+)
+SOURCE_GROUP("Expressions" FILES ${Expressions_SRCS})
+
 SET(SketchModule_SRCS
     AppSketcher.cpp
     AppSketcherPy.cpp
@@ -122,6 +143,7 @@ SET(Sketcher_SRCS
     ${Python_SRCS}
     ${Properties_SRCS}
     ${Datatypes_SRCS}
+    ${Expressions_SRCS}
 )
 
 SET(Sketcher_Scripts
