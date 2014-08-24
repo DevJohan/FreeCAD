@@ -111,12 +111,17 @@ SET(FreeGCS_EXP_SRCS
 SOURCE_GROUP("FreeGCS_EXP" FILES ${FreeGCS_EXP_SRCS})
 
 
-BISON_TARGET(QuantityParserExp ${CMAKE_CURRENT_SOURCE_DIR}/expressions/QuantityParserExp.y ${CMAKE_CURRENT_BINARY_DIR}/expressions/QuantityParserExp.cpp)
-FLEX_TARGET( QuantityLexerExp  ${CMAKE_CURRENT_SOURCE_DIR}/expressions/QuantityLexerExp.l  ${CMAKE_CURRENT_BINARY_DIR}/expressions/QuantityLexerExp.cpp )
-ADD_FLEX_BISON_DEPENDENCY(QuantityLexerExp QuantityParserExp)
+BISON_TARGET( ExpressionParser 
+	${CMAKE_CURRENT_SOURCE_DIR}/expressions/ExpressionParser.y 
+	${CMAKE_CURRENT_BINARY_DIR}/expressions/ExpressionParser.cpp )
+FLEX_TARGET( ExpressionLexer  
+	${CMAKE_CURRENT_SOURCE_DIR}/expressions/ExpressionLexer.l  
+	${CMAKE_CURRENT_BINARY_DIR}/expressions/ExpressionLexer.cpp
+	COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/expressions/ExpressionLexer.h )
+ADD_FLEX_BISON_DEPENDENCY(ExpressionLexer ExpressionParser)
 SET(ExpressionParser_SRCS
-	${BISON_QuantityParserExp_OUTPUTS} 
-	${FLEX_QuantityLexerExp_OUTPUTS}
+	${BISON_ExpressionParser_OUTPUTS} 
+	${FLEX_ExpressionLexer_OUTPUTS}
 )
 fc_check_target_dirs( ${ExpressionParser_SRCS} )
 

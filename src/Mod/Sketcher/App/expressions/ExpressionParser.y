@@ -4,10 +4,11 @@
 /* Bison options.  */
 %defines
 %language "C++"
-%define api.namespace {QuantityParserExp}
+%define api.namespace { SketcherExpressions }
 %define api.value.type variant
 %define api.token.constructor
-%define parser_class_name {QuantityParser}
+%define api.location.type { linear_location }
+%define parser_class_name { ExpressionParser }
 
 %code requires {
 	#include "PreCompiled.h"
@@ -23,18 +24,25 @@
     using Base::Quantity;
     using SketcherExpressions::ScaledUnit;
 
-	namespace QuantityParserExp {
-		class QuantityParserContext;
+	#include <Mod/Sketcher/App/expressions/ExpressionLexer.h>
+
+	namespace SketcherExpressions {
+		class ExpressionParserContext;
+		typedef struct{ int begin; int end; } linear_location;
+		inline void reset_location(linear_location& location){ location.begin = location.end; }
+		inline void set_location(linear_location& location, int size){ location.end = location.begin + size; }
 	}		
 }
 
-%param { QuantityParserContext& context }
+%locations
+%param { yyscan_t& yyscanner }
+%param { ExpressionParserContext& context }
+%param { location_type& location }
+%initial-action{
+}
 
 /* Represents the many different ways we can access our data */
 %{
-//        #define YYSTYPE Quantity
-//        #define yyparse Quantity_yyparse
-//        #define yyerror Quantity_yyerror
         #ifndef  DOUBLE_MAX
         # define DOUBLE_MAX 1.7976931348623157E+308    /* max decimal value of a "double"*/
         #endif
@@ -51,8 +59,8 @@
     	return ( result > .5 ? 1.0 - result : result ) < std::numeric_limits<T>::epsilon();
     }
 	 
-	#include <Mod/Sketcher/App/expressions/QuantityParserContextExp.h>
-	namespace QuantityParserExp {
+	#include <Mod/Sketcher/App/expressions/ExpressionParserContext.h>
+	namespace SketcherExpressions {
 		YY_DECL;
 	}
 }
@@ -61,9 +69,10 @@
 %token <ScaledUnit> UNIT "unit";
 %token <double> NUM "floating point number";
 %token <std::string> IDENTIFIER "identifier";
-%token <char> OPERATOR "operator char";
+%token <char> OPERATOR_CHAR "operator char";
 %token MINUSSIGN;
-%token ACOS ASIN ATAN ATAN2 COS EXP ABS MOD LOG LOG10 POW SIN SINH TAN TANH SQRT;
+%token ACOS ASIN ATAN COS EXP ABS LOG LOG10 SIN SINH TAN TANH SQRT;
+%token END 0 "the end"
 %left MINUSSIGN '+'
 %left '*' '/'
 %left NEG     /* negation--unary minus */
@@ -122,20 +131,20 @@
              | MINUSSIGN num  %prec NEG     { $$ = -$2;        	       }
              | num '^' num        			{ $$ = pow( $1 , $3 );}
              | '(' num ')'        			{ $$ = $2;         	}
-             | ACOS  '(' num ')'  			{ $$ = acos( $3 );   	}
-             | ASIN  '(' num ')'  			{ $$ = asin( $3 );   	}
-             | ATAN  '(' num ')'  			{ $$ = atan( $3 );   	}
-             | ATAN  '(' num '\\' num ')'	{ $$ = atan2( $3, $5 );}
-             | ABS  '(' num ')'   			{ $$ = fabs( $3 );   	}
-             | EXP  '(' num ')'   			{ $$ = exp( $3 );    	}
-             | LOG  '(' num ')'				{ $$ = log( $3 );     }
+             | ACOS   '(' num ')'  			{ $$ = acos( $3 );   	}
+             | ASIN   '(' num ')'  			{ $$ = asin( $3 );   	}
+             | ATAN   '(' num ')'  			{ $$ = atan( $3 );   	}
+             | ATAN   '(' num '\\' num ')'	{ $$ = atan2( $3, $5 );}
+             | ABS    '(' num ')'   		{ $$ = fabs( $3 );   	}
+             | EXP    '(' num ')'   		{ $$ = exp( $3 );    	}
+             | LOG    '(' num ')'			{ $$ = log( $3 );     }
              | LOG10  '(' num ')'			{ $$ = log10( $3 );   }
-             | SIN  '(' num ')'   			{ $$ = sin( $3 );     }
-             | SINH '(' num ')'   			{ $$ = sinh( $3 );    }
-             | TAN  '(' num ')'   			{ $$ = tan( $3 );     }
-             | TANH  '(' num ')'   			{ $$ = tanh( $3 );    }
-             | SQRT  '(' num ')'   			{ $$ = sqrt( $3 );    }
-             | COS  '(' num ')'   			{ $$ = cos( $3 );    }
+             | SIN    '(' num ')'  			{ $$ = sin( $3 );     }
+             | SINH   '(' num ')'  			{ $$ = sinh( $3 );    }
+             | TAN    '(' num ')'  			{ $$ = tan( $3 );     }
+             | TANH   '(' num ')'  			{ $$ = tanh( $3 );    }
+             | SQRT   '(' num ')'  			{ $$ = sqrt( $3 );    }
+             | COS    '(' num ')'   		{ $$ = cos( $3 );    }
 ;            
 
     unit:       UNIT                        { $$ = $1;         	                }
