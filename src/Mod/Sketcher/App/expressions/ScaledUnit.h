@@ -27,7 +27,6 @@
 
 
 #include <Base/Unit.h>
-//#include <QString>
 
 #ifndef  DOUBLE_MAX
 # define DOUBLE_MAX 1.7976931348623157E+308    /* max decimal value of a "double"*/

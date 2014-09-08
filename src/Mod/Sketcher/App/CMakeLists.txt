@@ -129,6 +129,18 @@ SET(Expressions_SRCS
 	${ExpressionParser_SRCS}
 	expressions/ScaledUnit.cpp
 	expressions/ScaledUnit.h
+	expressions/ExpressionParserContext.cpp
+	expressions/ExpressionParserContext.h
+	expressions/ExpressionBase.cpp
+	expressions/ExpressionBase.h
+	expressions/FunctionExpressions.cpp
+	expressions/FunctionExpressions.h
+	expressions/ExpressionContext.cpp
+	expressions/ExpressionContext.h
+	expressions/SumExpression.cpp
+	expressions/SumExpression.h
+	expressions/ProductExpression.cpp
+	expressions/ProductExpression.h
 )
 SOURCE_GROUP("Expressions" FILES ${Expressions_SRCS})
 
