@@ -20,18 +20,27 @@
     #include <Base/Unit.h>
     #include <Base/Quantity.h>
     #include <Mod/Sketcher/App/expressions/ScaledUnit.h>
+    #include <Mod/Sketcher/App/expressions/ExpressionBase.h>
     using Base::Unit;
     using Base::Quantity;
     using SketcherExpressions::ScaledUnit;
-
-	#include <Mod/Sketcher/App/expressions/ExpressionLexer.h>
 
 	namespace SketcherExpressions {
 		class ExpressionParserContext;
 		typedef struct{ int begin; int end; } linear_location;
 		inline void reset_location(linear_location& location){ location.begin = location.end; }
 		inline void set_location(linear_location& location, int size){ location.end = location.begin + size; }
-	}		
+	}
+	
+	#define YY_DECL \
+		SketcherExpressions::ExpressionParser::symbol_type yylex( \
+			yyscan_t& yyscanner,  \
+			SketcherExpressions::ExpressionParserContext& context, \
+			SketcherExpressions::ExpressionParser::location_type& location )
+
+	#include <Mod/Sketcher/App/expressions/ExpressionLexer.h>
+			
+
 }
 
 %locations
@@ -52,17 +61,16 @@
 %}
 
 %code {
+	#include <Mod/Sketcher/App/expressions/ExpressionParserContext.h>
+	// Declare lexer prototype for parser to use
+	YY_DECL;
+
 	#include <limits>
 	template <typename T>
     bool is_integer(T value){
     	const T result = abs(std::fmod(value,1.0)); 
     	return ( result > .5 ? 1.0 - result : result ) < std::numeric_limits<T>::epsilon();
     }
-	 
-	#include <Mod/Sketcher/App/expressions/ExpressionParserContext.h>
-	namespace SketcherExpressions {
-		YY_DECL;
-	}
 }
 
 /* Bison declarations.  */
@@ -71,7 +79,7 @@
 %token <std::string> IDENTIFIER "identifier";
 %token <char> OPERATOR_CHAR "operator char";
 %token MINUSSIGN;
-%token ACOS ASIN ATAN COS EXP ABS LOG LOG10 SIN SINH TAN TANH SQRT;
+%token ACOS ASIN ATAN COS COSH EXP ABS LOG LOG10 SIN SINH TAN TANH SQRT;
 %token END 0 "the end"
 %left MINUSSIGN '+'
 %left '*' '/'
@@ -83,44 +91,40 @@
                
 %}
 
-%type <Quantity> expr
+%type <ExpressionReference> expr
 %type <double> num
 %type <ScaledUnit> unit
 %type <Quantity> quantity
 
-%start input
+%start expr
 
 %%
 
-    input:                                  { context.result = Quantity(DOUBLE_MIN); /* empty input */ }
-            |  expr                         { context.result = $1;            }
-            |  num                          { context.result = $1;            }
-            |  unit                         { context.result = Quantity(0,$1.getUnit());     }
-            |  quantity                     { context.result = $1     ;            }
-            |  quantity quantity            { context.result = $1 + $2;            }
- ;   
-     expr:    num                			{ $$ = $1;                             }
-             | expr '+' expr        		{ $$ = $1.getValue() + $3.getValue();  }
-             | expr MINUSSIGN expr          { $$ = $1.getValue() - $3.getValue();  }
-             | expr '*' expr       			{ $$ = $1.getValue() * $3.getValue();  }
-             | expr '/' expr       			{ $$ = $1.getValue() / $3.getValue();  }
-             | MINUSSIGN expr  %prec NEG    { $$ = -$2.getValue();        	       }
-             | expr '^' expr       			{ $$ = pow ($1.getValue(), $3.getValue());}
-             | '(' expr ')'        			{ $$ = $2;         	}
-             | ACOS  '(' expr ')'  			{ $$ = acos($3.getValue());   	}
-             | ASIN  '(' expr ')'  			{ $$ = asin($3.getValue());   	}
-             | ATAN  '(' expr ')'  			{ $$ = atan($3.getValue());   	}
-             | ATAN  '(' expr '\\' expr ')'	{ $$ = atan2($3.getValue(),$5.getValue());}
-             | ABS  '(' expr ')'   			{ $$ = fabs($3.getValue());   	}
-             | EXP  '(' expr ')'   			{ $$ = exp($3.getValue());    	}
-             | LOG  '(' expr ')'			{ $$ = log($3.getValue());     }
-             | LOG10  '(' expr ')'			{ $$ = log10($3.getValue());   }
-             | SIN  '(' expr ')'   			{ $$ = sin($3.getValue());     }
-             | SINH '(' expr ')'   			{ $$ = sinh($3.getValue());    }
-             | TAN  '(' expr ')'   			{ $$ = tan($3.getValue());     }
-             | TANH  '(' expr ')'   		{ $$ = tanh($3.getValue());    }
-             | SQRT  '(' expr ')'   		{ $$ = sqrt($3.getValue());    }
-             | COS  '(' expr ')'   			{ $$ = cos($3.getValue());    }
+     expr:    num                			{ $$ = context.create_const( $1 );     	}
+             | quantity    			    	{ $$ = context.create_const( $1 );     	}
+             | IDENTIFIER		    		{ $$ = context.create_parameter( $1 ); 	}
+             | expr '+' expr        		{ $$ = context.create_addition( $1, $3);}
+             | expr MINUSSIGN expr          { $$ = context.create_subtraction( $1, $3); }
+             | expr '*' expr       			{ $$ = context.create_multiplication( $1, $3);}
+             | expr '/' expr       			{ $$ = context.create_division( $1, $3);} 
+             | MINUSSIGN expr  %prec NEG    { $$ = context.create_negation( $2);        	       				}
+             | expr '^' expr       			{ $$ = context.create_pow_expr($1, $3);	}
+             | '(' expr ')'        			{ $$ = $2;         						}
+             | ACOS  '(' expr ')'  			{ $$ = context.create_acos_expr(  $3  ); }
+             | ASIN  '(' expr ')'  			{ $$ = context.create_asin_expr(  $3  ); }
+             | ATAN  '(' expr ')'  			{ $$ = context.create_atan_expr(  $3  ); }
+             | ATAN  '(' expr '\\' expr ')'	{ $$ = context.create_atan2_expr( $3 , $5  ); }
+             | ABS  '(' expr ')'   			{ $$ = context.create_abs_expr(   $3  ); }
+             | EXP  '(' expr ')'   			{ $$ = context.create_exp_expr(   $3  ); }
+             | LOG  '(' expr ')'			{ $$ = context.create_ln_expr(    $3  ); }
+             | LOG10  '(' expr ')'			{ $$ = context.create_log_expr( 10.0, $3  ); }
+             | SIN  '(' expr ')'   			{ $$ = context.create_sin_expr(   $3  ); }
+             | SINH '(' expr ')'   			{ $$ = context.create_sinh_expr(  $3  ); }
+             | COS  '(' expr ')'   			{ $$ = context.create_cos_expr(   $3  ); }
+             | COSH  '(' expr ')'   		{ $$ = context.create_cosh_expr(  $3  ); }
+             | TAN  '(' expr ')'   			{ $$ = context.create_tan_expr(   $3  ); }
+             | TANH  '(' expr ')'   		{ $$ = context.create_tanh_expr(  $3  ); }
+             | SQRT  '(' expr ')'   		{ $$ = context.create_sqrt_expr(  $3  ); }
 ;            
      
      num:      NUM                			{ $$ = $1;                             }
@@ -158,3 +162,7 @@
 
 
 %%
+
+namespace SketcherExpressions{
+	void ExpressionParser::error(const location_type& l, const std::string& m){ }
+}
