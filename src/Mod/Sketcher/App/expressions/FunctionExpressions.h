@@ -29,92 +29,94 @@ namespace SketcherExpressions{
 
 static const int dynamic = -1;
 
-template < int arg_count, ExpressionType::Types type, bool is_quantity>
-class FunctionExpression: public ExpressionBase<type, is_quantity>{
+template < int arg_count, ExpressionType::Types type, ExpressionBaseTypes data_value_type>
+class FunctionExpression: public ExpressionBase<type, data_value_type>{
 public:
-	typedef typename ExpressionBase<type, is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase<type, data_value_type>::value_type  value_type;
 
 	static const int argument_count = arg_count;
 
+	FunctionExpression();
 	virtual ~FunctionExpression();
 
 protected:
 	Expression* arguments[argument_count];
 };
 
-template < ExpressionType::Types type, bool is_quantity>
-class FunctionExpression<dynamic,type,is_quantity>: public ExpressionBase<type, is_quantity>{
+template < ExpressionType::Types type, ExpressionBaseTypes data_value_type>
+class FunctionExpression<dynamic,type,data_value_type>: public ExpressionBase<type, data_value_type>{
 public:
-	typedef typename ExpressionBase< type, is_quantity >::value_type  value_type;
+	typedef typename ExpressionBase< type, data_value_type >::value_type  value_type;
 
+	FunctionExpression();
 	virtual ~FunctionExpression();
 
 protected:
 	std::vector<Expression*> arguments;
 };
 
-template < bool is_quantity>
-class SinExpression: public FunctionExpression<1,ExpressionType::Sin,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class SinExpression: public FunctionExpression<1,ExpressionType::Sin,data_value_type>{
 public:
-	typedef typename ExpressionBase<ExpressionType::Sin,is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase<ExpressionType::Sin,data_value_type>::value_type  value_type;
 
 	SinExpression(ExpressionReference argument);
 	virtual ~SinExpression();
 };
 
-template < bool is_quantity>
-class CosExpression: public FunctionExpression<1,ExpressionType::Cos,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class CosExpression: public FunctionExpression<1,ExpressionType::Cos,data_value_type>{
 public:
-	typedef typename ExpressionBase<ExpressionType::Cos,is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase<ExpressionType::Cos,data_value_type>::value_type  value_type;
 
 	CosExpression(ExpressionReference argument);
 	virtual ~CosExpression();
 };
 
-template < bool is_quantity>
-class TanExpression: public FunctionExpression<1,ExpressionType::Tan,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class TanExpression: public FunctionExpression<1,ExpressionType::Tan,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Tan,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Tan,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	TanExpression(ExpressionReference argument);
 	virtual ~TanExpression();
 };
 
-template < bool is_quantity>
-class ArcsinExpression: public FunctionExpression<1,ExpressionType::Arcsin,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class ArcsinExpression: public FunctionExpression<1,ExpressionType::Arcsin,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Arcsin,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Arcsin,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	ArcsinExpression(ExpressionReference argument);
 	virtual ~ArcsinExpression();
 };
 
-template < bool is_quantity>
-class ArccosExpression: public FunctionExpression<1,ExpressionType::Arccos,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class ArccosExpression: public FunctionExpression<1,ExpressionType::Arccos,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Arccos,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Arccos,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	ArccosExpression(ExpressionReference argument);
 	virtual ~ArccosExpression();
 };
 
-template < bool is_quantity>
-class ArctanExpression: public FunctionExpression<1,ExpressionType::Arctan,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class ArctanExpression: public FunctionExpression<1,ExpressionType::Arctan,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Arctan,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Arctan,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	ArctanExpression(ExpressionReference argument);
 	virtual ~ArctanExpression();
 };
 
-template < bool is_quantity>
-class Arctan2Expression: public FunctionExpression<2, ExpressionType::Arctan2, is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class Arctan2Expression: public FunctionExpression<2, ExpressionType::Arctan2, data_value_type>{
 public:
-	typedef FunctionExpression<2,ExpressionType::Arctan2,is_quantity>  base_type;
+	typedef FunctionExpression<2,ExpressionType::Arctan2,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	Arctan2Expression(ExpressionReference y, ExpressionReference x);
@@ -122,10 +124,10 @@ public:
 };
 
 //ABS
-template < bool is_quantity>
-class AbsExpression: public FunctionExpression<1,ExpressionType::Abs,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class AbsExpression: public FunctionExpression<1,ExpressionType::Abs,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Abs,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Abs,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	AbsExpression(ExpressionReference argument);
@@ -133,10 +135,10 @@ public:
 };
 
 //POW
-template < bool is_quantity>
-class PowExpression: public FunctionExpression<2,ExpressionType::Pow,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class PowExpression: public FunctionExpression<2,ExpressionType::Pow,data_value_type>{
 public:
-	typedef FunctionExpression<2,ExpressionType::Pow,is_quantity>  base_type;
+	typedef FunctionExpression<2,ExpressionType::Pow,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	PowExpression(ExpressionReference base, ExpressionReference argument);
@@ -144,10 +146,10 @@ public:
 };
 
 //LOG
-template < bool is_quantity>
-class LogExpression: public FunctionExpression<2,ExpressionType::Log,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class LogExpression: public FunctionExpression<2,ExpressionType::Log,data_value_type>{
 public:
-	typedef FunctionExpression<2,ExpressionType::Log,is_quantity>  base_type;
+	typedef FunctionExpression<2,ExpressionType::Log,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	LogExpression(ExpressionReference base, ExpressionReference argument);
@@ -155,10 +157,10 @@ public:
 };
 
 //EXP
-template < bool is_quantity>
-class ExpExpression: public FunctionExpression<1,ExpressionType::Exp,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class ExpExpression: public FunctionExpression<1,ExpressionType::Exp,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Exp,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Exp,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	ExpExpression(ExpressionReference argument);
@@ -166,10 +168,10 @@ public:
 };
 
 //LN
-template < bool is_quantity>
-class LnExpression: public FunctionExpression<1,ExpressionType::Ln,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class LnExpression: public FunctionExpression<1,ExpressionType::Ln,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Ln,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Ln,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	LnExpression(ExpressionReference argument);
@@ -178,10 +180,10 @@ public:
 
 
 //SINH
-template < bool is_quantity>
-class SinhExpression: public FunctionExpression<1,ExpressionType::Sinh,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class SinhExpression: public FunctionExpression<1,ExpressionType::Sinh,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Sinh,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Sinh,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	SinhExpression(ExpressionReference argument);
@@ -189,10 +191,10 @@ public:
 };
 
 //COSH
-template < bool is_quantity>
-class CoshExpression: public FunctionExpression<1,ExpressionType::Cosh,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class CoshExpression: public FunctionExpression<1,ExpressionType::Cosh,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Cosh,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Cosh,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	CoshExpression(ExpressionReference argument);
@@ -200,10 +202,10 @@ public:
 };
 
 //TANH
-template < bool is_quantity>
-class TanhExpression: public FunctionExpression<1,ExpressionType::Tanh,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class TanhExpression: public FunctionExpression<1,ExpressionType::Tanh,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Tanh,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Tanh,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	TanhExpression(ExpressionReference argument);
@@ -211,10 +213,10 @@ public:
 };
 
 //SQRT
-template < bool is_quantity>
-class SqrtExpression: public FunctionExpression<1,ExpressionType::Sqrt,is_quantity>{
+template < ExpressionBaseTypes data_value_type>
+class SqrtExpression: public FunctionExpression<1,ExpressionType::Sqrt,data_value_type>{
 public:
-	typedef FunctionExpression<1,ExpressionType::Sqrt,is_quantity>  base_type;
+	typedef FunctionExpression<1,ExpressionType::Sqrt,data_value_type>  base_type;
 	typedef typename base_type::value_type  value_type;
 
 	SqrtExpression(ExpressionReference argument);

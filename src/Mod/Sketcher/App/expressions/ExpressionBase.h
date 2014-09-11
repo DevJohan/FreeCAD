@@ -88,7 +88,7 @@ public:
 
 	/* Return the type of this expression.
 	 */
-	virtual ExpressionType getType() const = 0;
+	virtual ExpressionType::Types getType() const = 0;
 	/* Creates a copy of the current expression.
 	 */
 	virtual ExpressionReference clone() const = 0;
@@ -127,16 +127,25 @@ public:
 
 std::ostream& operator<<( std::ostream& os, const Expression& expr );
 
-template <ExpressionType::Types type, bool is_quantity>
+
+
+enum ExpressionBaseTypes{
+	plain,
+	quantity,
+	other
+};
+
+
+template <ExpressionType::Types type, ExpressionBaseTypes data_value_type>
 class ExpressionBase;
 
 template <ExpressionType::Types _type>
-class ExpressionBase<_type, true>: public Expression{
+class ExpressionBase<_type, quantity>: public Expression{
 public:
 	static const ExpressionType::Types type = _type;
 	typedef Quantity value_type;
 	void print(std::ostream& os, expr_print_modifier epm) const;
-	virtual ExpressionType getType() const;
+	virtual ExpressionType::Types getType() const;
 	virtual ExpressionReference clone() const;
 	virtual ExpressionReference dimensionlessCopy() const;
 	virtual bool isContextDependent() const;
@@ -146,12 +155,12 @@ public:
 };
 
 template <ExpressionType::Types _type>
-class ExpressionBase<_type, false>: public Expression{
+class ExpressionBase<_type, plain>: public Expression{
 public:
 	static const ExpressionType::Types type = _type;
 	typedef double value_type;
 	void print(std::ostream& os, expr_print_modifier epm) const;
-	virtual ExpressionType getType() const;
+	virtual ExpressionType::Types getType() const;
 	virtual ExpressionReference clone() const;
 	virtual ExpressionReference dimensionlessCopy() const;
 	virtual bool isContextDependent() const;
@@ -161,10 +170,10 @@ public:
 };
 
 
-template <bool is_quantity>
-class ConstantExpression: public ExpressionBase< ExpressionType::Constant,is_quantity>{
+template <ExpressionBaseTypes data_value_type>
+class ConstantExpression: public ExpressionBase< ExpressionType::Constant,data_value_type>{
 public:
-	typedef typename ExpressionBase< ExpressionType::Constant,is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase< ExpressionType::Constant,data_value_type>::value_type  value_type;
 
 	ConstantExpression( value_type value ): _value( value ){ }
 	ConstantExpression( ExpressionReference value ): _value( 0 ){ }
@@ -174,27 +183,28 @@ protected:
 	value_type _value;
 };
 
-template <bool is_quantity>
-class NamedExpression: public ExpressionBase<ExpressionType::Named, is_quantity>{
+template <ExpressionBaseTypes data_value_type>
+class NamedExpression: public ExpressionBase<ExpressionType::Named, data_value_type>{
 public:
-	typedef typename ExpressionBase<ExpressionType::Named, is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase<ExpressionType::Named, data_value_type>::value_type  value_type;
 
 	NamedExpression( ExpressionContext& context, const std::string& name );
 	virtual ~NamedExpression(){ }
-	virtual std::vector<ExpressionReference> getDependencies() const;
+	virtual std::vector<expression_index_type> getDependencies() const;
 protected:
 	ExpressionContext& _context;
 	expression_index_type _index;
 };
 
-template <bool is_quantity>
+template <ExpressionBaseTypes data_value_type>
 class ContextlessNamedExpression
-		: public ExpressionBase<ExpressionType::ContextlessNamed, is_quantity>{
+		: public ExpressionBase<ExpressionType::ContextlessNamed, data_value_type>{
 public:
-	typedef typename ExpressionBase<ExpressionType::ContextlessNamed, is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase<ExpressionType::ContextlessNamed, data_value_type>::value_type  value_type;
 
+	ContextlessNamedExpression(const std::string& name);
 	virtual ~ContextlessNamedExpression(){ }
-	virtual std::vector<ExpressionReference> getDependencies() const;
+	virtual std::vector<expression_index_type> getDependencies() const;
 protected:
 	std::string _name;
 };

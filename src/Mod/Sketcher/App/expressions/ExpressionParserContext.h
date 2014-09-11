@@ -67,7 +67,7 @@ public:
 	ExpressionReference create_pow_expr(   ExpressionReference base, ExpressionReference exponent );
 	ExpressionReference create_exp_expr(   ExpressionReference argument );
 	ExpressionReference create_ln_expr(    ExpressionReference argument );
-	ExpressionReference create_log_expr( double base, ExpressionReference argument ){ return new ConstantExpression<false>(7);}
+	ExpressionReference create_log_expr( double base, ExpressionReference argument ){ return new ConstantExpression<plain>(7);}
 	ExpressionReference create_log_expr( ExpressionReference base, ExpressionReference argument );
 	ExpressionReference create_sin_expr(   ExpressionReference argument );
 	ExpressionReference create_sinh_expr(  ExpressionReference argument );

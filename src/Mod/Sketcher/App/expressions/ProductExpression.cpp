@@ -26,18 +26,26 @@
 
 namespace SketcherExpressions{
 
-template < bool is_quantity >
-ProductExpression< is_quantity >::~ProductExpression(){
+template < ExpressionBaseTypes data_value_type >
+ProductExpression<data_value_type>::ProductExpression(
+		const std::vector<ExpressionReference>& mult_factors,
+		const std::vector<ExpressionReference>& div_factor
+):numerator_arguments(mult_factors),denominator_arguments(div_factor){
+
+}
+template < ExpressionBaseTypes data_value_type >
+ProductExpression< data_value_type >::~ProductExpression(){
 
 }
 
 
-template < bool is_quantity >
-void ProductExpression< is_quantity >::print( std::ostream& os, expr_print_modifier epm ) const {
+template < ExpressionBaseTypes data_value_type >
+void ProductExpression< data_value_type >::print( std::ostream& os, expr_print_modifier epm ) const {
+
 	if( numerator_arguments.size() == 0 ){
 		os << "1";
 	} else{
-		argument_list_type::iterator it = numerator_arguments.begin();
+		argument_list_type::const_iterator it = numerator_arguments.begin();
 		os << "( ";
 		if( (*it)->needParenthesis() ){
 			os << "( ";
@@ -47,7 +55,7 @@ void ProductExpression< is_quantity >::print( std::ostream& os, expr_print_modif
 			(*it)->print(os);
 		}
 		++it;
-		const argument_list_type::iterator numer_it_end = numerator_arguments.end();
+		const argument_list_type::const_iterator numer_it_end = numerator_arguments.end();
 		for( ;it != numer_it_end; ++it ){
 			os << "*";
 			if((*it)->needParenthesis()){
@@ -61,7 +69,7 @@ void ProductExpression< is_quantity >::print( std::ostream& os, expr_print_modif
 		os <<")";
 	} // if( numerator_arguments.size == 0 )
 	if( denominator_arguments.size() > 0 ){
-		argument_list_type::iterator it = denominator_arguments.begin();
+		argument_list_type::const_iterator it = denominator_arguments.begin();
 		os << "/(";
 		if( (*it)->needParenthesis() ){
 			os << "( ";
@@ -71,7 +79,7 @@ void ProductExpression< is_quantity >::print( std::ostream& os, expr_print_modif
 			(*it)->print(os);
 		}
 		++it;
-		const argument_list_type::iterator denom_it_end = denominator_arguments.end();
+		const argument_list_type::const_iterator denom_it_end = denominator_arguments.end();
 		for( ;it != denom_it_end; ++it ){
 			os << "*";
 			if((*it)->needParenthesis()){
@@ -84,8 +92,11 @@ void ProductExpression< is_quantity >::print( std::ostream& os, expr_print_modif
 		}
 		os <<")";
 	}
-	return os;
 }
+
+
+template class ProductExpression<plain>;
+template class ProductExpression<quantity>;
 
 } // namespace SketcherExpressions
 

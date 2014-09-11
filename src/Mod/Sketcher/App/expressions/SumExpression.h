@@ -27,12 +27,15 @@
 
 namespace SketcherExpressions{
 
-template < bool is_quantity >
-class SumExpression: public ExpressionBase<ExpressionType::Sum, is_quantity>{
+template < ExpressionBaseTypes data_value_type >
+class SumExpression: public ExpressionBase<ExpressionType::Sum, data_value_type>{
 public:
-	typedef typename ExpressionBase<ExpressionType::Sum, is_quantity>::value_type  value_type;
+	typedef typename ExpressionBase<ExpressionType::Sum, data_value_type>::value_type  value_type;
 	typedef std::vector<Expression*> argument_list_type;
 
+	SumExpression(
+			const std::vector<ExpressionReference>& additions,
+			const std::vector<ExpressionReference>& subtractions);
 	virtual ~SumExpression();
 	virtual void print( std::ostream& os, expr_print_modifier epm ) const;
 protected:
