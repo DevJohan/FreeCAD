@@ -28,12 +28,16 @@
 
 namespace SketcherExpressions{
 
-template < bool is_quantity >
-class ProductExpression: public ExpressionBase<ExpressionType::Product, is_quantity>{
+template < ExpressionBaseTypes data_value_type >
+class ProductExpression: public ExpressionBase<ExpressionType::Product, data_value_type>{
 public:
-	typedef ExpressionBase<ExpressionType::Product, is_quantity> base_type;
+	typedef ExpressionBase<ExpressionType::Product, data_value_type> base_type;
 	typedef typename base_type::value_type  value_type;
-	typedef std::vector<Expression*> argument_list_type;
+	typedef std::vector<ExpressionReference> argument_list_type;
+
+	ProductExpression(
+			const std::vector<ExpressionReference>& mult_factors,
+			const std::vector<ExpressionReference>& div_factor);
 
 	virtual ~ProductExpression();
 	virtual void print(std::ostream& os, expr_print_modifier epm) const;
@@ -41,6 +45,7 @@ protected:
 	argument_list_type numerator_arguments;
 	argument_list_type denominator_arguments;
 };
+
 
 } // namespace SketcherExpressions
 

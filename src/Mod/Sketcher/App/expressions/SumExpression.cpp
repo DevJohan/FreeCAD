@@ -25,12 +25,26 @@
 
 namespace SketcherExpressions{
 
-template < bool is_quantity >
-void SumExpression<is_quantity>::print( std::ostream& os, expr_print_modifier epm ) const{
+template < ExpressionBaseTypes data_value_type >
+SumExpression<data_value_type>::SumExpression(
+		const std::vector<ExpressionReference>& additions,
+		const std::vector<ExpressionReference>& subtractions
+):addition_arguments(additions),subtract_arguments(subtractions){
+}
+
+
+template < ExpressionBaseTypes data_value_type >
+SumExpression<data_value_type>::~SumExpression(){
+
+}
+
+
+	template < ExpressionBaseTypes data_value_type >
+void SumExpression<data_value_type>::print( std::ostream& os, expr_print_modifier epm ) const{
 	if( addition_arguments.size() == 0 ){
 		os << "1";
 	} else{
-		argument_list_type::iterator it = addition_arguments.begin();
+		argument_list_type::const_iterator it = addition_arguments.begin();
 		os << "( ";
 		if( (*it)->needParenthesis() ){
 			os << "( ";
@@ -40,7 +54,7 @@ void SumExpression<is_quantity>::print( std::ostream& os, expr_print_modifier ep
 			(*it)->print(os,epm);
 		}
 		++it;
-		const argument_list_type::iterator numer_it_end = subtract_arguments.end();
+		const argument_list_type::const_iterator numer_it_end = subtract_arguments.end();
 		for( ;it != numer_it_end; ++it ){
 			os << "+";
 			if((*it)->needParenthesis()){
@@ -54,7 +68,7 @@ void SumExpression<is_quantity>::print( std::ostream& os, expr_print_modifier ep
 		os <<")";
 	} // if( numerator_arguments.size == 0 )
 	if( subtract_arguments.size() > 0 ){
-		argument_list_type::iterator it = subtract_arguments.begin();
+		argument_list_type::const_iterator it = subtract_arguments.begin();
 		os << "/(";
 		if( (*it)->needParenthesis() ){
 			os << "( ";
@@ -64,7 +78,7 @@ void SumExpression<is_quantity>::print( std::ostream& os, expr_print_modifier ep
 			(*it)->print(os);
 		}
 		++it;
-		const argument_list_type::iterator denom_it_end = subtract_arguments.end();
+		const argument_list_type::const_iterator denom_it_end = subtract_arguments.end();
 		for( ;it != denom_it_end; ++it ){
 			os << "*";
 			if((*it)->needParenthesis()){
@@ -77,8 +91,13 @@ void SumExpression<is_quantity>::print( std::ostream& os, expr_print_modifier ep
 		}
 		os <<")";
 	}
-	return os;
-
 }
+
+
+
+
+
+template class SumExpression<plain>;
+template class SumExpression<quantity>;
 
 } // namespace Sketcher_Expressions
