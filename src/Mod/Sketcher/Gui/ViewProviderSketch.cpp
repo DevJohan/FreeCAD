@@ -4119,15 +4119,10 @@ void ViewProviderSketch::solveSketch(void)
                 else
                     signalSetUp(tr("Under-constrained sketch with %1 degrees of freedom").arg(dofs));
             }
-<<<<<<< HEAD
-            
-            signalSolved(tr("Solved in %1 sec").arg(edit->ActSketch.SolveTime));
-            signalSolveStatusUpdate(edit->ActSketch.SolveTime,edit->ActSketch.latest_algorithm,true);
-=======
             double solveTime = edit->ActSketch.getSolveTime();
             signalSolved(tr("Solved in %1 sec").arg(solveTime));
             signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(), true);
->>>>>>> Abstracting SketchSolver from Sketch to allow interchangable use of experimental sketcher
+
         }
         else {
             double solveTime = edit->ActSketch.getSolveTime();

@@ -42,7 +42,8 @@ enum SolveStatus {
 enum Algorithm {
     BFGS = 0,
     LevenbergMarquardt = 1,
-    DogLeg = 2
+    DogLeg = 2,
+    ModFirst = 3
 };
 
 
@@ -97,7 +98,7 @@ enum Algorithm {
         	return index >= priority_constraints_count;
         }
 
-        void addDependentVariables( const std::vector< double* >& dependent_vars );
+        void setDependentVariables( const std::vector< double* >& dependent_vars );
         void addConstraints( const std::vector<ConstraintInfo *> &clist_ );
 
         template <typename IteratorType>

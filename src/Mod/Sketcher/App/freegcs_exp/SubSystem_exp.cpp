@@ -53,7 +53,7 @@ SubSystem::SubSystem(
 	 * are in the beginning of the variables vector. Which variables are dependent
 	 * is determined by checking index smaller than dependent_variable_count.
 	 */
-	addDependentVariables( dependent_vars );
+	setDependentVariables( dependent_vars );
 
 	addConstraints( clist_ );
 	initialize();
@@ -63,7 +63,7 @@ SubSystem::~SubSystem()
 {
 }
 
-void SubSystem::addDependentVariables( const std::vector< double* >& dependent_vars ){
+void SubSystem::setDependentVariables( const std::vector< double* >& dependent_vars ){
 	typedef std::vector<double*>::const_iterator dpv_iterator;
     for( dpv_iterator dp_iter = dependent_vars.begin();
     		dp_iter != dependent_vars.end(); ++dp_iter ) {
