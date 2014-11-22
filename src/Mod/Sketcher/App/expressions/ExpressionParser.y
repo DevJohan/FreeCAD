@@ -113,7 +113,7 @@
              | ACOS  '(' expr ')'  			{ $$ = context.create_acos_expr(  $3  ); }
              | ASIN  '(' expr ')'  			{ $$ = context.create_asin_expr(  $3  ); }
              | ATAN  '(' expr ')'  			{ $$ = context.create_atan_expr(  $3  ); }
-             | ATAN  '(' expr '//' expr ')'	{ $$ = context.create_atan2_expr( $3 , $5  ); }
+             | ATAN  '(' expr '\\' expr ')'	{ $$ = context.create_atan2_expr( $5 , $3  ); }
              | ABS  '(' expr ')'   			{ $$ = context.create_abs_expr(   $3  ); }
              | EXP  '(' expr ')'   			{ $$ = context.create_exp_expr(   $3  ); }
              | LOG  '(' expr ')'			{ $$ = context.create_ln_expr(    $3  ); }

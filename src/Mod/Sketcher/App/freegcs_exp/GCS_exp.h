@@ -37,8 +37,11 @@ namespace GCS_EXP
     {
     // This is the main class. It holds all constraints and information
     // about partitioning into subsystems and solution strategies
+    public:
+    	typedef std::vector<ConstraintInfo *> constraits_container;
     private:
-        std::vector<ConstraintInfo *> constraints_list;
+    	constraits_container constraints_list;
+        constraits_container reduced_constraints_list;
         std::vector<index_type> constraints_to_subsystem;
         /* dependent_variables is a vector rather than a set because
          * in initSolution() the distance is taken between iterators
@@ -70,11 +73,13 @@ namespace GCS_EXP
 
     public:
         System();
-        System(std::vector<ConstraintInfo *> clist_);
+        System(constraits_container clist_);
         ~System();
 
         void clear();
         void clearByTag(int tagId);
+
+        int addReducedConstraint( ConstraintInfo *constr );
 
         int addConstraint(ConstraintInfo *constr);
         void removeConstraint(ConstraintInfo *constr);
@@ -150,7 +155,7 @@ namespace GCS_EXP
 
         void rescaleConstraint( int id, double coeff );
 
-        void declareUnknowns(std::vector<double *> &params);
+        void declareUnknowns( std::vector<double *> &params );
         void initSolution();
 
         int solve(bool isFine=true, Algorithm alg=DogLeg);

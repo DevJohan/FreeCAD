@@ -112,11 +112,27 @@ void System::clearByTag(int tagId)
     free( constrvec );
 }
 
+int System::addReducedConstraint( ConstraintInfo *constr )
+{
+    isInit = false;
+    if ( constr->getTag() >= 0 ) // negatively tagged constraints have no impact
+        hasDiagnosis = false;    // on the diagnosis
+
+    reduced_constraints_list.push_back( constr );
+    return -(1+reduced_constraints_list.size());
+}
+
 int System::addConstraint( ConstraintInfo *constr )
 {
     isInit = false;
     if ( constr->getTag() >= 0 ) // negatively tagged constraints have no impact
         hasDiagnosis = false;    // on the diagnosis
+
+    if( constr->getTypeId() == Equal ){
+    	const std::vector<double*>& params = constr->params();
+    	if( std::abs( *params[0] - *params[1]) < 1e-14 )
+    		return addReducedConstraint(constr);
+    }
 
     constraints_list.push_back(constr);
     return constraints_list.size()-1;
@@ -786,6 +802,7 @@ void System::initSolution()
     	}
     }
 
+
     /* partitioning into decoupled components using graph flood fill coloring.
      * The first dependent_variables.size() vertices in graph correspond to
      * the dependent variables with the same index as in dependent_variables.
@@ -797,28 +814,92 @@ void System::initSolution()
     // first dependent_variables.size() vertices in graph g represents the dependent variables
     int cvtid = dependent_variables.size();
     for (std::vector<ConstraintInfo *>::const_iterator constr=constraints_list.begin();
-         constr != constraints_list.end(); ++constr, cvtid++) {
-        const std::vector<double*>& constraint_variables = (*constr)->params();
-        for( std::vector<double*>::const_iterator param = constraint_variables.begin();
-             param != constraint_variables.end(); ++param) {
-        	std::vector<double*>::iterator it = std::lower_bound(
-        			dependent_variables.begin(),
-        			dependent_variables.end(),*param);
-            if( it != dependent_variables.end() && *it == *param )
-                boost::add_edge(cvtid, std::distance( dependent_variables.begin(), it ), g );
-        }
+    		constr != constraints_list.end(); ++constr, cvtid++)
+    {
+    	const std::vector<double*>& constraint_variables = (*constr)->params();
+    	for( std::vector<double*>::const_iterator param = constraint_variables.begin();
+    			param != constraint_variables.end(); ++param)
+    	{
+    		std::vector<double*>::iterator it = std::lower_bound(
+    				dependent_variables.begin(),
+    				dependent_variables.end(),*param);
+    		if( it != dependent_variables.end() && *it == *param ){
+    			boost::add_edge(cvtid, std::distance( dependent_variables.begin(), it ), g );
+    		}
+    	}
     }
 
-    std::vector<index_type> components(boost::num_vertices(g));
+    std::vector<index_type> components( boost::num_vertices(g) );
     int componentsSize = 0;
     // This performs the flood fill coloring.
     if (!components.empty())
         componentsSize = boost::connected_components(g, &components[0]);
 
     // Save which subsystem each constraint belong to
-    constraints_to_subsystem.assign(
-    		( components.begin() + dependent_variables.size() ),
-    		components.end());
+    std::vector<index_type>::iterator comp_iter = components.begin();
+    std::advance( comp_iter, dependent_variables.size() );
+    constraints_to_subsystem.assign( comp_iter, components.end() );
+
+
+
+
+
+	bool need_reprocess;
+    do{
+    	need_reprocess = false;
+    	cvtid = 0;
+    	for (std::vector<ConstraintInfo *>::const_iterator constr = constraints_list.begin();
+    			constr != constraints_list.end(); ++constr, cvtid++)
+    	{
+    		const std::vector<double*>& constraint_variables = (*constr)->params();
+    		std::vector<double*> constraint_dependent_variables;
+    		constraint_dependent_variables.reserve( constraint_variables.size() );
+    		for( std::vector<double*>::const_iterator param = constraint_variables.begin();
+    				param != constraint_variables.end(); ++param )
+    		{
+    			std::vector<double*>::iterator it = std::lower_bound(
+    					dependent_variables.begin(),
+    					dependent_variables.end(),*param);
+    			if( it != dependent_variables.end() && *it == *param ){
+    				constraint_dependent_variables.push_back( *param );
+    			}
+    		}
+    		if( constraint_dependent_variables.size() == 1 ){
+
+    		}else if( (*constr)->getTypeId() == Equal ){
+    			constraint_variables[ 0 ];
+    			constraint_variables[ 1 ];
+    		}else
+    			Base::Console().Message( "Constraint in subsystem %i with %i dependent variables\n", constraints_to_subsystem[cvtid], constraint_dependent_variables.size());
+    	}
+    }while( need_reprocess );
+
+
+
+    // Just for information, to be removed
+    cvtid = 0;
+    for( std::vector<ConstraintInfo *>::const_iterator constr = constraints_list.begin();
+    		constr != constraints_list.end(); ++constr, cvtid++)
+    {
+    	const std::vector<double*>& constraint_variables = (*constr)->params();
+    	size_t nof_dependent_variables = 0;
+    	for( std::vector<double*>::const_iterator param = constraint_variables.begin();
+    			param != constraint_variables.end(); ++param) {
+    		std::vector<double*>::iterator it = std::lower_bound(
+    				dependent_variables.begin(),
+    				dependent_variables.end(),*param);
+    		if( it != dependent_variables.end() && *it == *param )
+    			nof_dependent_variables++;
+    	}
+   		Base::Console().Message( "Constraint in subsystem %i with %i dependent variables\n",constraints_to_subsystem[cvtid], nof_dependent_variables);
+    }
+
+
+
+
+
+
+
 
     // Resolve which dependent variables belongs to which subsystem
     std::vector< std::vector<double*> > plists( componentsSize );
