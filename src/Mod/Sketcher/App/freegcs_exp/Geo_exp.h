@@ -66,6 +66,30 @@ namespace GCS_EXP
         double *radius;
     };
 
+    class Ellipse
+    {
+    public:
+        Ellipse(){ radmin = 0; focus1X = 0; focus1Y = 0; }
+        Point center;
+        double *focus1X; //+u
+        double *focus1Y;
+        double *radmin;
+    };
+
+    class ArcOfEllipse
+    {
+    public:
+        ArcOfEllipse(){ startAngle=0; endAngle=0; radmin = 0; focus1X = 0; focus1Y = 0; }
+        double *startAngle;
+        double *endAngle;
+        double *radmin;
+        Point start;
+        Point end;
+        Point center;
+        double *focus1X; //+u
+        double *focus1Y;
+    };
+
 
     ///////////////////////////////////////
     // Geometries info
@@ -119,6 +143,60 @@ namespace GCS_EXP
     	CircleInfo(PointInfo c_in, index_type ra):center(c_in),radius(ra){ }
     	PointInfo center;
     	index_type radius;
+    };
+
+
+    class EllipseInfo
+    {
+    public:
+        EllipseInfo(
+        		PointInfo _center,
+        		index_type _focus1X,
+        		index_type _focus1Y,
+        		index_type _radmin
+        ):
+        	center(_center),
+        	focus1X(_focus1X),
+        	focus1Y(_focus1Y),
+        	radmin(_radmin)
+        {}
+        PointInfo center;
+        index_type focus1X; //+u
+        index_type focus1Y;
+        index_type radmin;
+    };
+
+    class ArcOfEllipseInfo
+    {
+    public:
+    	ArcOfEllipseInfo(
+    			index_type _startAngle,
+    			index_type _endAngle,
+    			index_type _radmin,
+    			PointInfo _start,
+    			PointInfo _end,
+    			PointInfo _center,
+    			index_type _focus1X,
+    			index_type _focus1Y
+    	):
+    		startAngle(_startAngle),
+    		endAngle(_endAngle),
+    		radmin(radmin),
+    		start(_start),
+    		end(_end),
+    		center(_center),
+    		focus1X(_focus1X),
+    		focus1Y(_focus1Y)
+    	{}
+
+        index_type startAngle;
+        index_type endAngle;
+        index_type radmin;
+        PointInfo start;
+        PointInfo end;
+        PointInfo center;
+        index_type focus1X; //+u
+        index_type focus1Y;
     };
 
 } //namespace GCS_EXP

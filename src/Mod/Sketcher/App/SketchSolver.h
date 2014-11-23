@@ -29,8 +29,6 @@
 #include <Mod/Part/App/TopoShape.h>
 #include "Constraint.h"
 
-#include "freegcs/GCS.h"
-
 #include <Base/Persistence.h>
 
 namespace Sketcher

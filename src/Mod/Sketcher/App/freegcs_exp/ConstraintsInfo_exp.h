@@ -232,6 +232,60 @@ namespace GCS_EXP
         virtual ConstraintInfo* clone() const;
     };
 
+
+    // PointOnEllipse
+    class ConstraintInfoPointOnEllipse: public ConstraintInfo, protected ConstraintVariables<PointOnEllipse>
+    {
+    public:
+        ConstraintInfoPointOnEllipse(Point &p, Ellipse &e);
+        ConstraintInfoPointOnEllipse(Point &p, ArcOfEllipse &a);
+        virtual Constraint* createConstraint(SubSystem& sub_system) const;
+        virtual ConstraintType getTypeId() const ;
+        virtual ConstraintInfo* clone() const;
+    };
+
+    class ConstraintInfoEllipseTangentLine: public ConstraintInfo, protected ConstraintVariables<TangentEllipseLine>
+    {
+    public:
+        ConstraintInfoEllipseTangentLine(Line &l, Ellipse &e);
+        ConstraintInfoEllipseTangentLine(Line &l, ArcOfEllipse &a);
+        virtual Constraint* createConstraint(SubSystem& sub_system) const;
+        virtual ConstraintType getTypeId() const ;
+        virtual ConstraintInfo* clone() const;
+    };
+
+    class ConstraintInfoInternalAlignmentPoint2Ellipse : public ConstraintInfo, protected ConstraintVariables<InternalAlignmentPoint2Ellipse>
+    {
+    private:
+        InternalAlignmentType AlignmentType;
+    public:
+        ConstraintInfoInternalAlignmentPoint2Ellipse(Ellipse &e, Point &p1, InternalAlignmentType alignmentType);
+        ConstraintInfoInternalAlignmentPoint2Ellipse(ArcOfEllipse &e, Point &p1, InternalAlignmentType alignmentType);
+        virtual Constraint* createConstraint(SubSystem& sub_system) const;
+        virtual ConstraintType getTypeId() const ;
+        virtual ConstraintInfo* clone() const;
+    };
+
+    class ConstraintInfoEqualMajorAxesEllipse: public ConstraintInfo, protected ConstraintVariables<EqualMajorAxesEllipse>
+    {
+    public:
+        ConstraintInfoEqualMajorAxesEllipse(Ellipse &e1, Ellipse &e2);
+        ConstraintInfoEqualMajorAxesEllipse(ArcOfEllipse &a1, Ellipse &e2);
+        ConstraintInfoEqualMajorAxesEllipse(ArcOfEllipse &a1, ArcOfEllipse &a2);
+        virtual Constraint* createConstraint(SubSystem& sub_system) const;
+        virtual ConstraintType getTypeId() const ;
+        virtual ConstraintInfo* clone() const;
+    };
+
+    class ConstraintInfoEllipticalArcRangeToEndPoints: public ConstraintInfo, protected ConstraintVariables<EllipticalArcRangeToEndPoints>
+    {
+    public:
+        ConstraintInfoEllipticalArcRangeToEndPoints(Point &p, ArcOfEllipse &a, double* const angle_t);
+        virtual Constraint* createConstraint(SubSystem& sub_system) const;
+        virtual ConstraintType getTypeId() const ;
+        virtual ConstraintInfo* clone() const;
+    };
+
 } //namespace GCS_EXP
 
 #endif // FREEGCS_CONSTRAINTSINFO_EXP_H

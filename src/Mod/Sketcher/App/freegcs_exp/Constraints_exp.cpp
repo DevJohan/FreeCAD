@@ -1104,4 +1104,1153 @@ void ConstraintTangentCircumf::grad( std::vector< grad_component_t >& gradVec )
     }
 }
 
+// ConstraintPointOnEllipse
+ConstraintPointOnEllipse::ConstraintPointOnEllipse(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
+}
+
+ConstraintType ConstraintPointOnEllipse::getTypeId() const
+{
+    return PointOnEllipse;
+}
+
+Constraint* ConstraintPointOnEllipse::clone() const
+{
+    return new ConstraintPointOnEllipse(*this);
+}
+
+void ConstraintPointOnEllipse::rescale(double coef)
+{
+    scale = coef * 1;
+}
+
+double ConstraintPointOnEllipse::error()
+{
+    double X_0 = value<p1x>();
+    double Y_0 = value<p1y>();
+    double X_c = value<cx>();
+    double Y_c = value<cy>();
+    double X_F1 = value<f1x>();
+    double Y_F1 = value<f1y>();
+    double b = value<radmin>();
+
+    const double diffP0F1_X = X_0 - X_F1;
+    const double diffP0F1_Y = Y_0 - Y_F1;
+
+    const double diffP0F1c_X = X_0 + X_F1 - 2*X_c;
+    const double diffP0F1c_Y = Y_0 + Y_F1 - 2*Y_c;
+
+    const double Xm_0F1c = pow(diffP0F1c_X, 2);
+    const double Ym_0F1c = pow(diffP0F1c_Y, 2);
+
+    double err = sqrt(pow(diffP0F1_X, 2) + pow(diffP0F1_Y, 2)) + sqrt(Xm_0F1c + Ym_0F1c) - 2*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2));
+    return scale * err;
+}
+
+void ConstraintPointOnEllipse::grad( std::vector< grad_component_t >& gradVec )
+{
+    if (	is_dependent<p1x>() || is_dependent<p1y>() ||
+    		is_dependent<f1x>() || is_dependent<f1y>() ||
+    		is_dependent<cx>()  || is_dependent<cy>()  ||
+    		is_dependent<radmin>()) {
+
+        const double X_0 = value<p1x>();
+        const double Y_0 = value<p1y>();
+        const double X_c = value<cx>();
+        const double Y_c = value<cy>();
+        const double X_F1 = value<f1x>();
+        const double Y_F1 = value<f1y>();
+        const double b = value<radmin>();
+
+        const double diffP0F1_X = X_0 - X_F1;
+        const double diffP0F1_Y = Y_0 - Y_F1;
+        const double inv_distP0F1 = 1/sqrt(pow(diffP0F1_X, 2) + pow(diffP0F1_Y, 2));
+
+        const double diffP0F1c_X = X_0 + X_F1 - 2*X_c;
+        const double diffP0F1c_Y = Y_0 + Y_F1 - 2*Y_c;
+        const double Xm_0F1c = pow(diffP0F1c_X, 2);
+        const double Ym_0F1c = pow(diffP0F1c_Y, 2);
+        const double invRm_0F1c = 1/sqrt(Xm_0F1c + Ym_0F1c);
+
+        const double invQ = 1/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2));
+
+        dependent_insert<p1x>( gradVec,
+        		scale * ( (diffP0F1_X) * inv_distP0F1 + (diffP0F1c_X) * invRm_0F1c ) );
+        dependent_insert<p1y>( gradVec,
+        		scale * ( (diffP0F1_Y) * inv_distP0F1 + (diffP0F1c_Y) * invRm_0F1c ) );
+        dependent_insert<f1x>( gradVec,
+        		scale * ( -(diffP0F1_X) * inv_distP0F1 - 2*(X_F1 - X_c) * invQ + (diffP0F1c_X) * invRm_0F1c ) );
+        dependent_insert<f1y>( gradVec,
+        		scale * ( -(diffP0F1_Y) * inv_distP0F1 - 2*(Y_F1 - Y_c) * invQ + (diffP0F1c_Y) * invRm_0F1c ) );
+        dependent_insert<cx>( gradVec,
+        		scale * ( 2*(X_F1 - X_c) * invQ - 2*(diffP0F1c_X) * invRm_0F1c ) );
+        dependent_insert<cy>( gradVec,
+        		scale * ( 2*(Y_F1 - Y_c) * invQ - 2*(diffP0F1c_Y) * invRm_0F1c ) );
+        dependent_insert<radmin>( gradVec,
+        		scale * ( -2*b * invQ ) );
+    }
+}
+
+// ConstraintEllipseTangentLine
+ConstraintEllipseTangentLine::ConstraintEllipseTangentLine(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
+}
+
+
+ConstraintType ConstraintEllipseTangentLine::getTypeId() const
+{
+    return TangentEllipseLine;
+}
+
+Constraint* ConstraintEllipseTangentLine::clone() const
+{
+    return new ConstraintEllipseTangentLine(*this);
+}
+
+void ConstraintEllipseTangentLine::rescale(double coef)
+{
+    scale = coef * 1;
+}
+
+double ConstraintEllipseTangentLine::error()
+{
+    double X_1 = value<p1x>();
+    double Y_1 = value<p1y>();
+    double X_2 = value<p2x>();
+    double Y_2 = value<p2y>();
+    double X_c = value<cx>();
+    double Y_c = value<cy>();
+    double X_F1 = value<f1x>();
+    double Y_F1 = value<f1y>();
+    double b = value<radmin>();
+
+    double err=-2*(sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        2*Y_1*Y_2 + pow(Y_2, 2))*sqrt(pow(X_F1, 2) - 2*X_F1*X_c + pow(X_c, 2) +
+        pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) - sqrt(pow(X_1,
+        2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) +
+        pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) -
+        2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c +
+        pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) +
+        pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c -
+        X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) +
+        pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c -
+        X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2)))
+        + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+        2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        2*Y_1*Y_c))))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        2*Y_1*Y_2 + pow(Y_2, 2));
+    return scale * err;
+}
+
+void ConstraintEllipseTangentLine::grad( std::vector< grad_component_t >& gradVec )
+{
+    if (	is_dependent<p1x>() || is_dependent<p1y>() ||
+    		is_dependent<p2x>() || is_dependent<p2y>() ||
+    		is_dependent<f1x>() || is_dependent<f1y>() ||
+    		is_dependent<cx>()  || is_dependent<cy>()  ||
+    		is_dependent<radmin> ()) {
+
+        double X_1 = value<p1x>();
+        double Y_1 = value<p1y>();
+        double X_2 = value<p2x>();
+        double Y_2 = value<p2y>();
+        double X_c = value<cx>();
+        double Y_c = value<cy>();
+        double X_F1 = value<f1x>();
+        double Y_F1 = value<f1y>();
+        double b = value<radmin>();
+
+        // DeepSOIC equation
+        // http://forum.freecadweb.org/viewtopic.php?f=10&t=7520&start=140
+        // Partials:
+
+        dependent_insert<p1x>( gradVec, scale * (
+        		2*(X_1 - X_2)*(sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))*sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) -
+        		                sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) +
+        		                pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1,
+        		                2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c -
+        		                2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c
+        		                + pow(X_c, 2) + pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c +
+        		                pow(X_c, 2) + pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2)
+        		                + pow(Y_c, 2))) + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+        		                2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        		                pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        		                2*Y_1*Y_c))))/pow(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2), 3.0/2.0) - 2*((X_1 - X_2)*sqrt(pow(X_F1, 2) -
+        		                2*X_F1*X_c + pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) +
+        		                pow(b, 2))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2)) - (X_1*(pow(X_c, 2) + pow(Y_c, 2)) -
+        		                X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(X_1 - X_2) -
+        		                2*X_F1*(X_1*X_c - X_2*X_c) + Y_1*(X_2*Y_c - X_F1*Y_c) + pow(Y_2, 2)*(X_1
+        		                - X_c) - Y_2*(2*X_1*Y_c - X_2*Y_c - X_F1*Y_c + Y_1*(X_2 - X_c)) +
+        		                Y_F1*(Y_1*(X_F1 - X_c) - Y_2*(X_F1 - X_c)))/sqrt(pow(X_1, 2)*(pow(X_c,
+        		                2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_2,
+        		                2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) - 2*X_1*X_2 +
+        		                pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2,
+        		                2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) + pow(Y_c,
+        		                2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c - X_2*Y_c)) +
+        		                pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c, 2)) -
+        		                2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c - X_2*Y_c) +
+        		                Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2))) +
+        		                pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) - 2*Y_F1*(pow(Y_1,
+        		                2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c +
+        		                Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) - 2*Y_1*Y_c))))/sqrt(pow(X_1,
+        		                2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+        dependent_insert<p1y>( gradVec, scale * (
+        		2*(Y_1 - Y_2)*(sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))*sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) -
+        		                sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) +
+        		                pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1,
+        		                2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c -
+        		                2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c
+        		                + pow(X_c, 2) + pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c +
+        		                pow(X_c, 2) + pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2)
+        		                + pow(Y_c, 2))) + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+        		                2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        		                pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        		                2*Y_1*Y_c))))/pow(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2), 3.0/2.0) - 2*((Y_1 - Y_2)*sqrt(pow(X_F1, 2) -
+        		                2*X_F1*X_c + pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) +
+        		                pow(b, 2))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2)) - (X_1*X_2*Y_c - pow(X_2, 2)*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c) + Y_1*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) +
+        		                pow(Y_c, 2)) - Y_2*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c,
+        		                2)) + pow(Y_F1, 2)*(Y_1 - Y_2) + Y_F1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 -
+        		                X_2) - 2*Y_1*Y_c + 2*Y_2*Y_c))/sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c,
+        		                2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) +
+        		                pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) -
+        		                2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1,
+        		                2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) + pow(Y_c, 2)) +
+        		                2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c - X_2*Y_c)) +
+        		                pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c, 2)) -
+        		                2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c - X_2*Y_c) +
+        		                Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2))) +
+        		                pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) - 2*Y_F1*(pow(Y_1,
+        		                2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c +
+        		                Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) - 2*Y_1*Y_c))))/sqrt(pow(X_1,
+        		                2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+        dependent_insert<p2x>( gradVec, scale * (
+        		-2*(X_1 - X_2)*(sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))*sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) -
+        		                sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) +
+        		                pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1,
+        		                2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c -
+        		                2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c
+        		                + pow(X_c, 2) + pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c +
+        		                pow(X_c, 2) + pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c -
+        		                X_F1*(X_1*Y_c - X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2)
+        		                + pow(Y_c, 2))) + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+        		                2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        		                pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        		                2*Y_1*Y_c))))/pow(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2), 3.0/2.0) + 2*((X_1 - X_2)*sqrt(pow(X_F1, 2) -
+        		                2*X_F1*X_c + pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) +
+        		                pow(b, 2))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2)) - (X_1*(pow(X_c, 2) + pow(Y_c, 2)) -
+        		                X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(X_1 - X_2) -
+        		                2*X_F1*(X_1*X_c - X_2*X_c) - pow(Y_1, 2)*(X_2 - X_c) - Y_1*(X_1*Y_c -
+        		                2*X_2*Y_c + X_F1*Y_c) + Y_2*(-X_1*Y_c + X_F1*Y_c + Y_1*(X_1 - X_c)) +
+        		                Y_F1*(Y_1*(X_F1 - X_c) - Y_2*(X_F1 - X_c)))/sqrt(pow(X_1, 2)*(pow(X_c,
+        		                2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_2,
+        		                2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) - 2*X_1*X_2 +
+        		                pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2,
+        		                2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) + pow(Y_c,
+        		                2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c - X_2*Y_c)) +
+        		                pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c, 2)) -
+        		                2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c - X_2*Y_c) +
+        		                Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2))) +
+        		                pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) - 2*Y_F1*(pow(Y_1,
+        		                2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c +
+        		                Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) - 2*Y_1*Y_c))))/sqrt(pow(X_1,
+        		                2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+       dependent_insert<p2y>( gradVec, scale * (
+    		   -2*(Y_1 - Y_2)*(sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+    		                   pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))*sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+    		                   pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) -
+    		                   sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) +
+    		                   pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1,
+    		                   2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c -
+    		                   2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c
+    		                   + pow(X_c, 2) + pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c -
+    		                   X_F1*(X_1*Y_c - X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c +
+    		                   pow(X_c, 2) + pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c -
+    		                   X_F1*(X_1*Y_c - X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2)
+    		                   + pow(Y_c, 2))) + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+    		                   2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+    		                   pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+    		                   2*Y_1*Y_c))))/pow(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+    		                   2*Y_1*Y_2 + pow(Y_2, 2), 3.0/2.0) + 2*((Y_1 - Y_2)*sqrt(pow(X_F1, 2) -
+    		                   2*X_F1*X_c + pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) +
+    		                   pow(b, 2))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+    		                   2*Y_1*Y_2 + pow(Y_2, 2)) - (pow(X_1, 2)*Y_c - X_1*X_2*Y_c -
+    		                   X_F1*(X_1*Y_c - X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2)
+    		                   + pow(Y_c, 2)) - Y_2*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c,
+    		                   2)) + pow(Y_F1, 2)*(Y_1 - Y_2) + Y_F1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 -
+    		                   X_2) - 2*Y_1*Y_c + 2*Y_2*Y_c))/sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c,
+    		                   2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) +
+    		                   pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) -
+    		                   2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1,
+    		                   2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) + pow(Y_c, 2)) +
+    		                   2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c - X_2*Y_c)) +
+    		                   pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c, 2)) -
+    		                   2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c - X_2*Y_c) +
+    		                   Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2))) +
+    		                   pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) - 2*Y_F1*(pow(Y_1,
+    		                   2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c +
+    		                   Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) - 2*Y_1*Y_c))))/sqrt(pow(X_1,
+    		                   2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))
+       ));
+        dependent_insert<f1x>( gradVec, scale * (
+        		-2*((X_F1 - X_c)*sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))/sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) +
+        		                (pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2, 2)*X_c - X_F1*(pow(X_1, 2) -
+        		                2*X_1*X_2 + pow(X_2, 2)) + Y_1*(X_1*Y_c - X_2*Y_c) - Y_2*(X_1*Y_c -
+        		                X_2*Y_c) - Y_F1*(Y_1*(X_1 - X_2) - Y_2*(X_1 - X_2)))/sqrt(pow(X_1,
+        		                2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) +
+        		                pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) -
+        		                2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c +
+        		                pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) +
+        		                pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c -
+        		                X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) +
+        		                pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c -
+        		                X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2)))
+        		                + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+        		                2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        		                pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        		                2*Y_1*Y_c))))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+        dependent_insert<f1y>( gradVec, scale * (
+        		-2*((Y_F1 - Y_c)*sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))/sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) +
+        		                (pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        		                pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        		                2*Y_1*Y_c) - Y_F1*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)))/sqrt(pow(X_1,
+        		                2)*(pow(X_c, 2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) +
+        		                pow(X_2, 2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) -
+        		                2*X_1*X_2 + pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c +
+        		                pow(X_2, 2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) +
+        		                pow(Y_c, 2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c -
+        		                X_2*Y_c)) + pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) +
+        		                pow(Y_c, 2)) - 2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c -
+        		                X_2*Y_c) + Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2)))
+        		                + pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) -
+        		                2*Y_F1*(pow(Y_1, 2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) +
+        		                pow(Y_2, 2)*Y_c + Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) -
+        		                2*Y_1*Y_c))))/sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) -
+        		                2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+        dependent_insert<cx>( gradVec, scale * (
+        		2*((X_F1 - X_c)*sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))/sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) +
+        		                (pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2, 2)*X_c - X_F1*(pow(X_1, 2) -
+        		                2*X_1*X_2 + pow(X_2, 2)) - pow(Y_1, 2)*(X_2 - X_c) + Y_1*Y_2*(X_1 + X_2
+        		                - 2*X_c) - pow(Y_2, 2)*(X_1 - X_c) - Y_F1*(Y_1*(X_1 - X_2) - Y_2*(X_1 -
+        		                X_2)))/sqrt(pow(X_1, 2)*(pow(X_c, 2) + pow(Y_c, 2)) -
+        		                2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_2, 2)*(pow(X_c, 2) +
+        		                pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2)) -
+        		                2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2, 2)*X_c) + pow(Y_1,
+        		                2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) + pow(Y_c, 2)) +
+        		                2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c - X_2*Y_c)) +
+        		                pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c, 2)) -
+        		                2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c - X_2*Y_c) +
+        		                Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2))) +
+        		                pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) - 2*Y_F1*(pow(Y_1,
+        		                2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c +
+        		                Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) - 2*Y_1*Y_c))))/sqrt(pow(X_1,
+        		                2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+        dependent_insert<cy>( gradVec, scale * (
+        		2*((Y_F1 - Y_c)*sqrt(pow(X_1, 2) - 2*X_1*X_2 + pow(X_2, 2) +
+        		                pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))/sqrt(pow(X_F1, 2) - 2*X_F1*X_c +
+        		                pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2)) +
+        		                (pow(X_1, 2)*Y_c - 2*X_1*X_2*Y_c + pow(X_2, 2)*Y_c + pow(Y_1, 2)*Y_c +
+        		                Y_1*(X_1*X_2 - pow(X_2, 2) - X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c -
+        		                Y_2*(pow(X_1, 2) - X_1*X_2 - X_F1*(X_1 - X_2) + 2*Y_1*Y_c) -
+        		                Y_F1*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)))/sqrt(pow(X_1, 2)*(pow(X_c,
+        		                2) + pow(Y_c, 2)) - 2*X_1*X_2*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_2,
+        		                2)*(pow(X_c, 2) + pow(Y_c, 2)) + pow(X_F1, 2)*(pow(X_1, 2) - 2*X_1*X_2 +
+        		                pow(X_2, 2)) - 2*X_F1*(pow(X_1, 2)*X_c - 2*X_1*X_2*X_c + pow(X_2,
+        		                2)*X_c) + pow(Y_1, 2)*(pow(X_2, 2) - 2*X_2*X_c + pow(X_c, 2) + pow(Y_c,
+        		                2)) + 2*Y_1*(X_1*X_2*Y_c - pow(X_2, 2)*Y_c - X_F1*(X_1*Y_c - X_2*Y_c)) +
+        		                pow(Y_2, 2)*(pow(X_1, 2) - 2*X_1*X_c + pow(X_c, 2) + pow(Y_c, 2)) -
+        		                2*Y_2*(pow(X_1, 2)*Y_c - X_1*X_2*Y_c - X_F1*(X_1*Y_c - X_2*Y_c) +
+        		                Y_1*(-X_1*X_c + X_2*(X_1 - X_c) + pow(X_c, 2) + pow(Y_c, 2))) +
+        		                pow(Y_F1, 2)*(pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2)) - 2*Y_F1*(pow(Y_1,
+        		                2)*Y_c - Y_1*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2)) + pow(Y_2, 2)*Y_c +
+        		                Y_2*(-X_1*X_c + X_2*X_c + X_F1*(X_1 - X_2) - 2*Y_1*Y_c))))/sqrt(pow(X_1,
+        		                2) - 2*X_1*X_2 + pow(X_2, 2) + pow(Y_1, 2) - 2*Y_1*Y_2 + pow(Y_2, 2))
+        ));
+        dependent_insert<radmin>( gradVec, scale * (
+        		-2*b/sqrt(pow(X_F1, 2) - 2*X_F1*X_c + pow(X_c, 2) + pow(Y_F1, 2) - 2*Y_F1*Y_c + pow(Y_c, 2) + pow(b, 2))
+        ));
+    }
+}
+
+// ConstraintInternalAlignmentPoint2Ellipse
+ConstraintInternalAlignmentPoint2Ellipse::ConstraintInternalAlignmentPoint2Ellipse(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef,
+		InternalAlignmentType alignmentType
+):Constraint( paramenters, indices, dependent_var_count ), AlignmentType( alignmentType ) {
+    rescale( scale_coef );
+}
+
+ConstraintType ConstraintInternalAlignmentPoint2Ellipse::getTypeId() const
+{
+    return InternalAlignmentPoint2Ellipse;
+}
+
+Constraint* ConstraintInternalAlignmentPoint2Ellipse::clone() const
+{
+    return new ConstraintInternalAlignmentPoint2Ellipse(*this);
+}
+
+void ConstraintInternalAlignmentPoint2Ellipse::rescale(double coef)
+{
+    scale = coef * 1;
+}
+
+double ConstraintInternalAlignmentPoint2Ellipse::error()
+{
+    // so first is to select the point (X_0,Y_0) in line to calculate
+    double X_1 = value<p1x>();
+    double Y_1 = value<p1y>();
+    double X_c = value<cx>();
+    double Y_c = value<cy>();
+    double X_F1 = value<f1x>();
+    double Y_F1 = value<f1y>();
+    double b = value<radmin>();
+
+    switch(AlignmentType)
+    {
+        case EllipsePositiveMajorX:
+            return scale * (X_1 - X_c - (X_F1 - X_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+                pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)));
+            break;
+        case EllipsePositiveMajorY:
+            return scale * (Y_1 - Y_c - (Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+                pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)));
+            break;
+        case EllipseNegativeMajorX:
+            return scale * (X_1 - X_c + (X_F1 - X_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+                pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)));
+            break;
+        case EllipseNegativeMajorY:
+            return scale * (Y_1 - Y_c + (Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+                pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)));
+            break;
+        case EllipsePositiveMinorX:
+            return scale * (X_1 - X_c + b*(Y_F1 - Y_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+                - Y_c, 2)));
+            break;
+        case EllipsePositiveMinorY:
+            return scale * (Y_1 - Y_c - b*(X_F1 - X_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+                - Y_c, 2)));
+            break;
+        case EllipseNegativeMinorX:
+            return scale * (X_1 - X_c - b*(Y_F1 - Y_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+                - Y_c, 2)));
+            break;
+        case EllipseNegativeMinorY:
+            return scale * (Y_1 - Y_c + b*(X_F1 - X_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+                - Y_c, 2)));
+            break;
+        case EllipseFocus2X:
+            return scale * (X_1 + X_F1 - 2*X_c);
+            break;
+        case EllipseFocus2Y:
+            return scale * (Y_1 + Y_F1 - 2*Y_c);
+            break;
+        default:
+            return 0;
+    }
+}
+
+void ConstraintInternalAlignmentPoint2Ellipse::grad( std::vector< grad_component_t >& gradVec )
+{
+    if (is_dependent<p1x>() || is_dependent<p1y>() ||
+        is_dependent<f1x>() || is_dependent<f1y>() ||
+        is_dependent<cx>() || is_dependent<cy>() ||
+        is_dependent<radmin>()) {
+
+        double X_1 = value<p1x>();
+        double Y_1 = value<p1y>();
+        double X_c = value<cx>();
+        double Y_c = value<cy>();
+        double X_F1 = value<f1x>();
+        double Y_F1 = value<f1y>();
+        double b = value<radmin>();
+
+        switch(AlignmentType)
+        {
+        case EllipsePositiveMajorX:
+        	dependent_insert<p1x>( gradVec, scale * (
+        			1
+        	));
+        	dependent_insert<f1x>( gradVec, scale * (
+        			-pow(X_F1 - X_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				pow(X_F1 - X_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) -
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));
+        	dependent_insert<f1y>( gradVec, scale * (
+        			-(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));
+        	dependent_insert<cx>( gradVec, scale * (
+        			pow(X_F1 - X_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				pow(X_F1 - X_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - 1 +
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));
+        	dependent_insert<cy>( gradVec, scale * (
+        			(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));
+        	dependent_insert<radmin>( gradVec, scale * (
+        			-b*(X_F1 - X_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)))
+        	));
+        	break;
+        case EllipsePositiveMajorY:
+        	dependent_insert<p1y>( gradVec, scale * (
+        			1
+        	));//        case EllipsePositiveMajorY:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			-(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipsePositiveMajorY:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			-pow(Y_F1 - Y_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				pow(Y_F1 - Y_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) -
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMajorY:
+        	dependent_insert<cx>( gradVec, scale * (
+        			(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipsePositiveMajorY:
+        	dependent_insert<cy>( gradVec, scale * (
+        			pow(Y_F1 - Y_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				pow(Y_F1 - Y_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - 1 +
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMajorY:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			-b*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)))
+        	));//        case EllipsePositiveMajorY:
+        	break;
+        case EllipseNegativeMajorX:
+        	dependent_insert<p1x>( gradVec, scale * (
+        			1
+        	));//        case EllipseNegativeMajorX:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			pow(X_F1 - X_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				pow(X_F1 - X_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) +
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMajorX:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipseNegativeMajorX:
+        	dependent_insert<cx>( gradVec, scale * (
+        			-pow(X_F1 - X_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				pow(X_F1 - X_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - 1 -
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	        	));//        case EllipseNegativeMajorX:
+
+        	dependent_insert<cy>( gradVec, scale * (
+        			-(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipseNegativeMajorX:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			b*(X_F1 - X_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)))
+        	));//        case EllipseNegativeMajorX:
+        	break;
+        case EllipseNegativeMajorY:
+        	dependent_insert<p1y>( gradVec, scale * (
+        			1
+        	));//        case EllipseNegativeMajorY:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipseNegativeMajorY:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			pow(Y_F1 - Y_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) -
+        			        				pow(Y_F1 - Y_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) +
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMajorY:
+        	dependent_insert<cx>( gradVec, scale * (
+        			-(X_F1 - X_c)*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				(X_F1 - X_c)*(Y_F1 - Y_c)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        						- Y_c, 2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipseNegativeMajorY:
+        	dependent_insert<cy>( gradVec, scale * (
+        			-pow(Y_F1 - Y_c, 2)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))) +
+        			        				pow(Y_F1 - Y_c, 2)*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        						2))/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - 1 -
+        			        						sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))/sqrt(pow(X_F1
+        			        								- X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMajorY:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			b*(Y_F1 - Y_c)/(sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2))*sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)))
+        	));//        case EllipseNegativeMajorY:
+        	break;
+        case EllipsePositiveMinorX:
+        	dependent_insert<p1x>( gradVec, scale * (
+        			1
+        	));
+        	dependent_insert<f1x>( gradVec, scale * (
+        			-b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipsePositiveMinorX:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			-b*pow(Y_F1 - Y_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) + b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMinorX:
+        	dependent_insert<cx>( gradVec, scale * (
+        			b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L) - 1
+        	));//        case EllipsePositiveMinorX:
+        	dependent_insert<cy>( gradVec, scale * (
+        			b*pow(Y_F1 - Y_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) - b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMinorX:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			(Y_F1 - Y_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	        	));//        case EllipsePositiveMinorX:
+        	break;
+        case EllipsePositiveMinorY:
+        	dependent_insert<p1y>( gradVec, scale * (
+        			1
+        	));//        case EllipsePositiveMinorY:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			b*pow(X_F1 - X_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) - b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMinorY:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipsePositiveMinorY:
+        	dependent_insert<cx>( gradVec, scale * (
+        			-b*pow(X_F1 - X_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) + b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMinorY:
+        	dependent_insert<cy>( gradVec, scale * (
+        			-b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L) - 1
+        	));//        case EllipsePositiveMinorY:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			-(X_F1 - X_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipsePositiveMinorY:
+        	break;
+        case EllipseNegativeMinorX:
+        	dependent_insert<p1x>( gradVec, scale * (
+        			1
+        	));//        case EllipseNegativeMinorX:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L)
+        	));//        case EllipseNegativeMinorX:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			b*pow(Y_F1 - Y_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) - b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMinorX:
+        	dependent_insert<cx>( gradVec, scale * (
+        			-b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L) - 1
+        	));//        case EllipseNegativeMinorX:
+        	dependent_insert<cy>( gradVec, scale * (
+        			-b*pow(Y_F1 - Y_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) + b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMinorX:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			-(Y_F1 - Y_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMinorX:
+        	break;
+        case EllipseNegativeMinorY:
+        	dependent_insert<p1y>( gradVec, scale * (
+        			1
+        	));//        case EllipseNegativeMinorY:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			-b*pow(X_F1 - X_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) + b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMinorY:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			-b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L)
+        	        	));//        case EllipseNegativeMinorY:
+        	dependent_insert<cx>( gradVec, scale * (
+        			b*pow(X_F1 - X_c, 2)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        			        				2), 3.0L/2.0L) - b/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMinorY:
+        	dependent_insert<cy>( gradVec, scale * (
+        			b*(X_F1 - X_c)*(Y_F1 - Y_c)/pow(pow(X_F1 - X_c, 2) + pow(Y_F1
+        			        				- Y_c, 2), 3.0L/2.0L) - 1
+        	));//        case EllipseNegativeMinorY:
+        	dependent_insert<radmin>( gradVec, scale * (
+        			(X_F1 - X_c)/sqrt(pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2))
+        	));//        case EllipseNegativeMinorY:
+        	break;
+        case EllipseFocus2X:
+        	dependent_insert<p1x>( gradVec, scale * (
+        			1
+        	));//        case EllipseFocus2X:
+        	dependent_insert<f1x>( gradVec, scale * (
+        			1
+        	));//        case EllipseFocus2X:
+        	dependent_insert<cx>( gradVec, scale * (
+        			-2
+        	));//        case EllipseFocus2X:
+        	break;
+        case EllipseFocus2Y:
+        	dependent_insert<p1y>( gradVec, scale * (
+        			1
+        	));//        case EllipseFocus2Y:
+        	dependent_insert<f1y>( gradVec, scale * (
+        			1
+        	));//        case EllipseFocus2Y:
+        	dependent_insert<cy>( gradVec, scale * (
+        			-2
+        	));//        case EllipseFocus2Y:
+        	break;
+        }
+    }
+}
+
+//  ConstraintEqualMajorAxesEllipse
+
+ConstraintEqualMajorAxesEllipse:: ConstraintEqualMajorAxesEllipse(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
+}
+
+ConstraintType ConstraintEqualMajorAxesEllipse::getTypeId() const
+{
+    return EqualMajorAxesEllipse;
+}
+
+Constraint* ConstraintEqualMajorAxesEllipse::clone() const
+{
+    return new ConstraintEqualMajorAxesEllipse(*this);
+}
+
+void ConstraintEqualMajorAxesEllipse::rescale(double coef)
+{
+    scale = coef * 1;
+}
+
+double ConstraintEqualMajorAxesEllipse::error()
+{
+    double E1X_c = value<e1cx>();
+    double E1Y_c = value<e1cy>();
+    double E1X_F1 = value<e1f1x>();
+    double E1Y_F1 = value<e1f1y>();
+    double E1b = value<e1rmin>();
+    double E2X_c = value<e2cx>();
+    double E2Y_c = value<e2cy>();
+    double E2X_F1 = value<e2f1x>();
+    double E2Y_F1 = value<e2f1y>();
+    double E2b = value<e2rmin>();
+
+    double err=sqrt(pow(E1X_F1, 2) - 2*E1X_F1*E1X_c + pow(E1X_c, 2) +
+        pow(E1Y_F1, 2) - 2*E1Y_F1*E1Y_c + pow(E1Y_c, 2) + pow(E1b, 2)) -
+        sqrt(pow(E2X_F1, 2) - 2*E2X_F1*E2X_c + pow(E2X_c, 2) + pow(E2Y_F1, 2) -
+        2*E2Y_F1*E2Y_c + pow(E2Y_c, 2) + pow(E2b, 2));
+    return scale * err;
+}
+
+void ConstraintEqualMajorAxesEllipse::grad( std::vector< grad_component_t >& gradVec )
+{
+    if (	is_dependent<e1f1x>()  || is_dependent<e1f1y>() ||
+    		is_dependent<e1cx>()   || is_dependent<e1cy>() ||
+    		is_dependent<e1rmin>() ||
+    		is_dependent<e2f1x>()  || is_dependent<e2f1y>() ||
+    		is_dependent<e2cx>()   || is_dependent<e2cy>() ||
+    		is_dependent<e2rmin>()) {
+
+        double E1X_c = value<e1cx>();
+        double E1Y_c = value<e1cy>();
+        double E1X_F1 = value<e1f1x>();
+        double E1Y_F1 = value<e1f1y>();
+        double E1b = value<e1rmin>();
+        double E2X_c = value<e2cx>();
+        double E2Y_c = value<e2cy>();
+        double E2X_F1 = value<e2f1x>();
+        double E2Y_F1 = value<e2f1y>();
+        double E2b = value<e2rmin>();
+
+        dependent_insert<e1cx>( gradVec, scale * (
+        		-(E1X_F1 - E1X_c)/sqrt(pow(E1X_F1, 2) - 2*E1X_F1*E1X_c +
+        		                pow(E1X_c, 2) + pow(E1Y_F1, 2) - 2*E1Y_F1*E1Y_c + pow(E1Y_c, 2) +
+        		                pow(E1b, 2))
+        ));
+        dependent_insert<e2cx>( gradVec, scale * (
+        		(E2X_F1 - E2X_c)/sqrt(pow(E2X_F1, 2) - 2*E2X_F1*E2X_c +
+        		                pow(E2X_c, 2) + pow(E2Y_F1, 2) - 2*E2Y_F1*E2Y_c + pow(E2Y_c, 2) +
+        		                pow(E2b, 2))
+        ));
+        dependent_insert<e1cy>( gradVec, scale * (
+        		-(E1Y_F1 - E1Y_c)/sqrt(pow(E1X_F1, 2) - 2*E1X_F1*E1X_c +
+        		                pow(E1X_c, 2) + pow(E1Y_F1, 2) - 2*E1Y_F1*E1Y_c + pow(E1Y_c, 2) +
+        		                pow(E1b, 2))
+        ));
+        dependent_insert<e2cy>( gradVec, scale * (
+        		(E2Y_F1 - E2Y_c)/sqrt(pow(E2X_F1, 2) - 2*E2X_F1*E2X_c +
+        		                pow(E2X_c, 2) + pow(E2Y_F1, 2) - 2*E2Y_F1*E2Y_c + pow(E2Y_c, 2) +
+        		                pow(E2b, 2))
+        ));
+        dependent_insert<e1f1x>( gradVec, scale * (
+        		(E1X_F1 - E1X_c)/sqrt(pow(E1X_F1, 2) - 2*E1X_F1*E1X_c +
+        		                pow(E1X_c, 2) + pow(E1Y_F1, 2) - 2*E1Y_F1*E1Y_c + pow(E1Y_c, 2) +
+        		                pow(E1b, 2))
+        ));
+        dependent_insert<e2f1x>( gradVec, scale * (
+        		-(E2X_F1 - E2X_c)/sqrt(pow(E2X_F1, 2) - 2*E2X_F1*E2X_c +
+        		                pow(E2X_c, 2) + pow(E2Y_F1, 2) - 2*E2Y_F1*E2Y_c + pow(E2Y_c, 2) +
+        		                pow(E2b, 2))
+        ));
+        dependent_insert<e1f1y>( gradVec, scale * (
+        		(E1Y_F1 - E1Y_c)/sqrt(pow(E1X_F1, 2) - 2*E1X_F1*E1X_c +
+        		                pow(E1X_c, 2) + pow(E1Y_F1, 2) - 2*E1Y_F1*E1Y_c + pow(E1Y_c, 2) +
+        		                pow(E1b, 2))
+        ));
+        dependent_insert<e2f1y>( gradVec, scale * (
+        		-(E2Y_F1 - E2Y_c)/sqrt(pow(E2X_F1, 2) - 2*E2X_F1*E2X_c +
+        		                pow(E2X_c, 2) + pow(E2Y_F1, 2) - 2*E2Y_F1*E2Y_c + pow(E2Y_c, 2) +
+        		                pow(E2b, 2))
+        ));
+        dependent_insert<e1rmin>( gradVec, scale * (
+        		E1b/sqrt(pow(E1X_F1, 2) - 2*E1X_F1*E1X_c + pow(E1X_c, 2) +
+        		                pow(E1Y_F1, 2) - 2*E1Y_F1*E1Y_c + pow(E1Y_c, 2) + pow(E1b, 2))
+        ));
+        dependent_insert<e2rmin>( gradVec, scale * (
+        		-E2b/sqrt(pow(E2X_F1, 2) - 2*E2X_F1*E2X_c + pow(E2X_c, 2) +
+        		                pow(E2Y_F1, 2) - 2*E2Y_F1*E2Y_c + pow(E2Y_c, 2) + pow(E2b, 2))
+        ));
+    }
+}
+
+// EllipticalArcRangeToEndPoints
+ConstraintEllipticalArcRangeToEndPoints::ConstraintEllipticalArcRangeToEndPoints(
+		const std::vector<double>& paramenters,
+		const std::vector<index_type> indices,
+		index_type dependent_var_count,
+		double scale_coef
+):Constraint( paramenters, indices, dependent_var_count ){
+    rescale( scale_coef );
+}
+
+ConstraintType ConstraintEllipticalArcRangeToEndPoints::getTypeId() const
+{
+    return EllipticalArcRangeToEndPoints;
+}
+
+Constraint* ConstraintEllipticalArcRangeToEndPoints::clone() const
+{
+    return new ConstraintEllipticalArcRangeToEndPoints(*this);
+}
+
+void ConstraintEllipticalArcRangeToEndPoints::rescale(double coef)
+{
+    scale = coef * 1;
+}
+
+double ConstraintEllipticalArcRangeToEndPoints::error()
+{
+    double X_0 = value<p1x>();
+    double Y_0 = value<p1y>();
+    double X_c = value<cx>();
+    double Y_c = value<cy>();
+    double X_F1 = value<f1x>();
+    double Y_F1 = value<f1y>();
+    double b = value<radmin>();
+    double alpha_t = value<angle>();
+
+    double err=atan((((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        Y_c))*cos(alpha_t)/b)/(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        Y_c))*sin(alpha_t)/b));
+    return scale * err;
+}
+
+void ConstraintEllipticalArcRangeToEndPoints::grad( std::vector< grad_component_t >& gradVec )
+{
+    if (	is_dependent<p1x>() || is_dependent<p1y>() ||
+    		is_dependent<f1x>() || is_dependent<f1y>() ||
+    		is_dependent<cx>()  || is_dependent<cy>()  ||
+    		is_dependent<radmin>() || is_dependent<angle>()) {
+
+        double X_0 = value<p1x>();
+        double Y_0 = value<p1y>();
+        double X_c = value<cx>();
+        double Y_c = value<cy>();
+        double X_F1 = value<f1x>();
+        double Y_F1 = value<f1y>();
+        double b = value<radmin>();
+        double alpha_t = value<angle>();
+
+        dependent_insert<p1x>( gradVec, scale * (
+        		-(-((X_F1 - X_c)*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) + (Y_F1 - Y_c)*cos(alpha_t)/b)/(((X_0 -
+        		                X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b,
+        		                2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 -
+        		                Y_c) + (X_F1 - X_c)*(Y_0 - Y_c))*sin(alpha_t)/b) + ((X_F1 -
+        		                X_c)*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) - (Y_F1 - Y_c)*sin(alpha_t)/b)*(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1
+        		                - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 -
+        		                Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<p1y>( gradVec, scale * (
+        		-(-((Y_F1 - Y_c)*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) - (X_F1 - X_c)*cos(alpha_t)/b)/(((X_0 -
+        		                X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b,
+        		                2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 -
+        		                Y_c) + (X_F1 - X_c)*(Y_0 - Y_c))*sin(alpha_t)/b) + ((Y_F1 -
+        		                Y_c)*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) + (X_F1 - X_c)*sin(alpha_t)/b)*(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1
+        		                - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 -
+        		                Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<f1x>( gradVec, scale * (
+        		-((((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)*((X_0 - X_c)*cos(alpha_t)/sqrt(pow(b, 2) +
+        		                pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)) - (X_F1 - X_c)*((X_0 -
+        		                X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/pow(pow(b, 2)
+        		                + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) + (Y_0 -
+        		                Y_c)*sin(alpha_t)/b)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) - ((X_0 - X_c)*sin(alpha_t)/sqrt(pow(b, 2) +
+        		                pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)) - (X_F1 - X_c)*((X_0 -
+        		                X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/pow(pow(b, 2)
+        		                + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - (Y_0 -
+        		                Y_c)*cos(alpha_t)/b)/(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<f1y>( gradVec, scale * (
+        		-((((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)*((Y_0 - Y_c)*cos(alpha_t)/sqrt(pow(b, 2) +
+        		                pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)) - (Y_F1 - Y_c)*((X_0 -
+        		                X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/pow(pow(b, 2)
+        		                + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - (X_0 -
+        		                X_c)*sin(alpha_t)/b)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) - ((Y_0 - Y_c)*sin(alpha_t)/sqrt(pow(b, 2) +
+        		                pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2)) - (Y_F1 - Y_c)*((X_0 -
+        		                X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/pow(pow(b, 2)
+        		                + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) + (X_0 -
+        		                X_c)*cos(alpha_t)/b)/(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<cx>( gradVec, scale * (
+        		((((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)*(-(X_F1 - X_c)*((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/pow(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2), 3.0L/2.0L) + (X_0 + X_F1 -
+        		                2*X_c)*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 -
+        		                Y_c, 2)) + (Y_0 - Y_F1)*sin(alpha_t)/b)/pow(((X_0 - X_c)*(X_F1 - X_c) +
+        		                (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 -
+        		                X_c)*(Y_0 - Y_c))*sin(alpha_t)/b, 2) - (-(X_F1 - X_c)*((X_0 - X_c)*(X_F1
+        		                - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/pow(pow(b, 2) + pow(X_F1
+        		                - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) + (X_0 + X_F1 -
+        		                2*X_c)*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 -
+        		                Y_c, 2)) - (Y_0 - Y_F1)*cos(alpha_t)/b)/(((X_0 - X_c)*(X_F1 - X_c) +
+        		                (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 -
+        		                X_c)*(Y_0 - Y_c))*sin(alpha_t)/b))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0
+        		                - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<cy>( gradVec, scale * (
+        		((((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)*(-(Y_F1 - Y_c)*((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/pow(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2), 3.0L/2.0L) + (Y_0 + Y_F1 -
+        		                2*Y_c)*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 -
+        		                Y_c, 2)) - (X_0 - X_F1)*sin(alpha_t)/b)/pow(((X_0 - X_c)*(X_F1 - X_c) +
+        		                (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 -
+        		                X_c)*(Y_0 - Y_c))*sin(alpha_t)/b, 2) - (-(Y_F1 - Y_c)*((X_0 - X_c)*(X_F1
+        		                - X_c) + (Y_0 - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/pow(pow(b, 2) + pow(X_F1
+        		                - X_c, 2) + pow(Y_F1 - Y_c, 2), 3.0L/2.0L) + (Y_0 + Y_F1 -
+        		                2*Y_c)*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 -
+        		                Y_c, 2)) + (X_0 - X_F1)*cos(alpha_t)/b)/(((X_0 - X_c)*(X_F1 - X_c) +
+        		                (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 -
+        		                X_c)*(Y_0 - Y_c))*sin(alpha_t)/b))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0
+        		                - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<radmin>( gradVec, scale * (
+        		((((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b)*(b*((X_0 - X_c)*(X_F1 - X_c) + (Y_0 - Y_c)*(Y_F1 -
+        		                Y_c))*cos(alpha_t)/pow(pow(b, 2) + pow(X_F1 - X_c, 2) + pow(Y_F1 - Y_c,
+        		                2), 3.0L/2.0L) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/pow(b, 2))/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) - (b*((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/pow(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2), 3.0L/2.0L) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 -
+        		                X_c)*(Y_0 - Y_c))*cos(alpha_t)/pow(b, 2))/(((X_0 - X_c)*(X_F1 - X_c) +
+        		                (Y_0 - Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c,
+        		                2) + pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 -
+        		                X_c)*(Y_0 - Y_c))*sin(alpha_t)/b))/(pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0
+        		                - Y_c)*(Y_F1 - Y_c))*sin(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) - (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*cos(alpha_t)/b, 2)/pow(((X_0 - X_c)*(X_F1 - X_c) + (Y_0 -
+        		                Y_c)*(Y_F1 - Y_c))*cos(alpha_t)/sqrt(pow(b, 2) + pow(X_F1 - X_c, 2) +
+        		                pow(Y_F1 - Y_c, 2)) + (-(X_0 - X_c)*(Y_F1 - Y_c) + (X_F1 - X_c)*(Y_0 -
+        		                Y_c))*sin(alpha_t)/b, 2) + 1)
+        ));
+        dependent_insert<angle>( gradVec, scale * (
+        		1
+        ));
+    }
+}
+
+double ConstraintEllipticalArcRangeToEndPoints::maxStep(
+		const std::vector<double>& dir,
+		double lim
+){
+    // step(value<angle>()) <= pi/18 = 10°
+    if( is_dependent<angle>() ) {
+        double step = std::abs( dir[ index<angle>() ]);
+        if (step > M_PI/18.)
+            lim = std::min(lim, (M_PI/18.) / step);
+    }
+    return lim;
+}
+
+
+
 } //namespace GCS

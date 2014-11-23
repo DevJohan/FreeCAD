@@ -25,6 +25,7 @@
 
 #include "Geo_exp.h"
 #include "Util_exp.h"
+#include <functional>
 
 namespace GCS_EXP
 {
@@ -46,7 +47,25 @@ namespace GCS_EXP
         Perpendicular = 9,
         L2LAngle = 10,
         MidpointOnLine = 11,
-        TangentCircumf = 12
+        TangentCircumf = 12,
+        PointOnEllipse = 13,
+        TangentEllipseLine = 14,
+        InternalAlignmentPoint2Ellipse = 15,
+        EqualMajorAxesEllipse = 16,
+        EllipticalArcRangeToEndPoints = 17
+    };
+
+    enum InternalAlignmentType {
+        EllipsePositiveMajorX = 0,
+        EllipsePositiveMajorY = 1,
+        EllipseNegativeMajorX = 2,
+        EllipseNegativeMajorY = 3,
+        EllipsePositiveMinorX = 4,
+        EllipsePositiveMinorY = 5,
+        EllipseNegativeMinorX = 6,
+        EllipseNegativeMinorY = 7,
+        EllipseFocus2X = 8,
+        EllipseFocus2Y = 9
     };
 
     template <ConstraintType CT>
@@ -100,6 +119,25 @@ namespace GCS_EXP
     struct ConstraintVariables<TangentCircumf> {
     	enum Variables{ c1x, c1y, c2x, c2y, r1, r2, variable_count }; };
 
+    template <>
+    struct ConstraintVariables<PointOnEllipse> {
+        enum { p1x, p1y, cx, cy, f1x, f1y, radmin, variable_count }; };
+
+    template <>
+    struct ConstraintVariables<TangentEllipseLine> {
+    	enum { p1x, p1y, p2x, p2y, cx, cy, f1x, f1y, radmin, variable_count }; };
+
+    template <>
+    struct ConstraintVariables<InternalAlignmentPoint2Ellipse> {
+    	enum { p1x, p1y, cx, cy, f1x, f1y, radmin, variable_count }; };
+
+    template <>
+    struct ConstraintVariables<EqualMajorAxesEllipse> {
+    	enum { e1cx, e1cy, e1f1x, e1f1y, e1rmin, e2cx, e2cy, e2f1x, e2f1y, e2rmin, variable_count }; };
+
+    template <>
+    struct ConstraintVariables<EllipticalArcRangeToEndPoints> {
+    	enum { p1x, p1y, angle, cx, cy, f1x, f1y, radmin, variable_count }; };
 
 
 
@@ -122,6 +160,9 @@ namespace GCS_EXP
         	return index<i>() < dependent_variable_count; }
         template <int i> void dependent_insert( std::vector< grad_component_t >& gradVec, double value ) const {
         	if( is_dependent<i>() ) gradVec.push_back( grad_component_t( index<i>(), value ) ); }
+//        // awaiting C++11 support in FreeCAD
+//        template <int i> void dependent_insert( std::vector< grad_component_t >& gradVec, std::function<double()>& func ) const {
+//        	if( is_dependent<i>() ) gradVec.push_back( grad_component_t( index<i>(), func() ) ); }
     public:
         Constraint(
         		const std::vector<double>& parameters,
@@ -358,6 +399,86 @@ namespace GCS_EXP
         virtual void grad( std::vector< grad_component_t >& gradVec );
     };
 
+    // PointOnEllipse
+    class ConstraintPointOnEllipse : public Constraint, protected ConstraintVariables<PointOnEllipse>
+    {
+    public:
+        ConstraintPointOnEllipse(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef);
+        virtual ConstraintType getTypeId() const;
+        virtual Constraint* clone() const;
+        virtual void rescale(double coef=1.);
+        virtual double error();
+        virtual void grad( std::vector< grad_component_t >& gradVec );
+    };
+
+    class ConstraintEllipseTangentLine : public Constraint, protected ConstraintVariables<TangentEllipseLine>
+    {
+    public:
+        ConstraintEllipseTangentLine(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef);
+        virtual ConstraintType getTypeId() const;
+        virtual Constraint* clone() const;
+        virtual void rescale(double coef=1.);
+        virtual double error();
+        virtual void grad( std::vector< grad_component_t >& gradVec );
+    };
+
+    class ConstraintInternalAlignmentPoint2Ellipse : public Constraint, protected ConstraintVariables<InternalAlignmentPoint2Ellipse>
+    {
+    public:
+    	ConstraintInternalAlignmentPoint2Ellipse(
+    			const std::vector<double>& parameters,
+    			const std::vector<index_type> indices,
+    			index_type dependent_var_count,
+    			double scale_coef,
+    			InternalAlignmentType alignmentType );
+        virtual ConstraintType getTypeId() const;
+        virtual Constraint* clone() const;
+        virtual void rescale(double coef=1.);
+        virtual double error();
+        virtual void grad( std::vector< grad_component_t >& gradVec );
+    private:
+        InternalAlignmentType AlignmentType;
+    };
+
+    class ConstraintEqualMajorAxesEllipse : public Constraint, protected ConstraintVariables<EqualMajorAxesEllipse>
+    {
+    public:
+        ConstraintEqualMajorAxesEllipse(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coef );
+        virtual ConstraintType getTypeId() const;
+        virtual Constraint* clone() const;
+        virtual void rescale(double coef=1.);
+        virtual double error();
+        virtual void grad( std::vector< grad_component_t >& gradVec );
+    };
+
+    // EllipticalArcRangeToEndPoints
+    class ConstraintEllipticalArcRangeToEndPoints : public Constraint, protected ConstraintVariables<EllipticalArcRangeToEndPoints>
+    {
+    public:
+        ConstraintEllipticalArcRangeToEndPoints(
+        		const std::vector<double>& parameters,
+        		const std::vector<index_type> indices,
+        		index_type dependent_var_count,
+        		double scale_coeft);
+        virtual ConstraintType getTypeId() const;
+        virtual Constraint* clone() const;
+        virtual void rescale(double coef=1.);
+        virtual double error();
+        virtual void grad( std::vector< grad_component_t >& gradVec );
+        virtual double maxStep( const std::vector<double>& dir, double lim=1.);
+    };
 
 
 } //namespace GCS_EXP

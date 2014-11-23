@@ -539,4 +539,261 @@ ConstraintInfo* ConstraintInfoTangentCircumf::clone() const
 }
 
 
+
+// ConstraintPointOnEllipse
+ConstraintInfoPointOnEllipse::ConstraintInfoPointOnEllipse(
+		Point &p,
+		Ellipse &e
+): ConstraintInfo() {
+	variables.resize(variable_count);
+    variables[ ConstraintVariables::p1x ] = p.x;
+    variables[ ConstraintVariables::p1y ] = p.y;
+    variables[ ConstraintVariables::cx ] = e.center.x;
+    variables[ ConstraintVariables::cy ] = e.center.y;
+    variables[ ConstraintVariables::f1x ] = e.focus1X;
+    variables[ ConstraintVariables::f1y ] = e.focus1Y;
+    variables[ ConstraintVariables::radmin] = e.radmin;
+}
+
+ConstraintInfoPointOnEllipse::ConstraintInfoPointOnEllipse(
+		Point &p,
+		ArcOfEllipse &a
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = p.x;
+    variables[ ConstraintVariables::p1y ] = p.y;
+    variables[ ConstraintVariables::cx ] = a.center.x;
+    variables[ ConstraintVariables::cy ] = a.center.y;
+    variables[ ConstraintVariables::f1x ] = a.focus1X;
+    variables[ ConstraintVariables::f1y ] = a.focus1Y;
+    variables[ ConstraintVariables::radmin ] = a.radmin;
+}
+
+Constraint* ConstraintInfoPointOnEllipse::createConstraint(SubSystem& subsys) const{
+	return new ConstraintPointOnEllipse(
+			subsys.getVariables(),
+			subsys.getIndices(variables),
+			subsys.getDependentVariableCount(),
+			scale_coef);
+}
+
+ConstraintType ConstraintInfoPointOnEllipse::getTypeId() const
+{
+    return PointOnEllipse;
+}
+
+ConstraintInfo* ConstraintInfoPointOnEllipse::clone() const
+{
+	return new ConstraintInfoPointOnEllipse(*this);
+}
+
+
+// ConstraintEllipseTangentLine
+ConstraintInfoEllipseTangentLine::ConstraintInfoEllipseTangentLine(
+		Line &l,
+		Ellipse &e
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ]=l.p1.x;
+    variables[ ConstraintVariables::p1y ]=l.p1.y;
+    variables[ ConstraintVariables::p2x ]=l.p2.x;
+    variables[ ConstraintVariables::p2y ]=l.p2.y;
+    variables[ ConstraintVariables::cx ]=e.center.x;
+    variables[ ConstraintVariables::cy ]=e.center.y;
+    variables[ ConstraintVariables::f1x ]=e.focus1X;
+    variables[ ConstraintVariables::f1y ]=e.focus1Y;
+    variables[ ConstraintVariables::radmin ]=e.radmin;
+}
+
+ConstraintInfoEllipseTangentLine::ConstraintInfoEllipseTangentLine(
+		Line &l,
+		ArcOfEllipse &a
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = l.p1.x;
+    variables[ ConstraintVariables::p1y ] = l.p1.y;
+    variables[ ConstraintVariables::p2x ] = l.p2.x;
+    variables[ ConstraintVariables::p2y ] = l.p2.y;
+    variables[ ConstraintVariables::cx ] = a.center.x;
+    variables[ ConstraintVariables::cy ] = a.center.y;
+    variables[ ConstraintVariables::f1x ] = a.focus1X;
+    variables[ ConstraintVariables::f1y ] = a.focus1Y;
+    variables[ ConstraintVariables::radmin ] = a.radmin;
+}
+
+Constraint* ConstraintInfoEllipseTangentLine::createConstraint(SubSystem& subsys) const{
+	return new ConstraintEllipseTangentLine(
+			subsys.getVariables(),
+			subsys.getIndices(variables),
+			subsys.getDependentVariableCount(),
+			scale_coef);
+}
+
+ConstraintType ConstraintInfoEllipseTangentLine::getTypeId() const
+{
+    return TangentEllipseLine;
+}
+
+ConstraintInfo* ConstraintInfoEllipseTangentLine::clone() const
+{
+    return new ConstraintInfoEllipseTangentLine(*this);
+}
+
+
+
+// ConstraintInternalAlignmentPoint2Ellipse
+ConstraintInfoInternalAlignmentPoint2Ellipse::ConstraintInfoInternalAlignmentPoint2Ellipse(
+		Ellipse &e,
+		Point &p1,
+		InternalAlignmentType alignmentType
+): ConstraintInfo(), AlignmentType( alignmentType) {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = p1.x;
+    variables[ ConstraintVariables::p1y ] = p1.y;
+    variables[ ConstraintVariables::cx ] = e.center.x;
+    variables[ ConstraintVariables::cy ] = e.center.y;
+    variables[ ConstraintVariables::f1x ] = e.focus1X;
+    variables[ ConstraintVariables::f1y ] = e.focus1Y;
+    variables[ ConstraintVariables::radmin ] = e.radmin;
+}
+
+ConstraintInfoInternalAlignmentPoint2Ellipse::ConstraintInfoInternalAlignmentPoint2Ellipse(
+		ArcOfEllipse &a,
+		Point &p1,
+		InternalAlignmentType alignmentType
+): ConstraintInfo(), AlignmentType(alignmentType) {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = p1.x;
+    variables[ ConstraintVariables::p1y ] = p1.y;
+    variables[ ConstraintVariables::cx ] = a.center.x;
+    variables[ ConstraintVariables::cy ] = a.center.y;
+    variables[ ConstraintVariables::f1x ] = a.focus1X;
+    variables[ ConstraintVariables::f1y ] = a.focus1Y;
+    variables[ ConstraintVariables::radmin ] = a.radmin;
+}
+
+Constraint* ConstraintInfoInternalAlignmentPoint2Ellipse::createConstraint(SubSystem& subsys) const{
+	return new ConstraintInternalAlignmentPoint2Ellipse(
+			subsys.getVariables(),
+			subsys.getIndices(variables),
+			subsys.getDependentVariableCount(),
+			scale_coef,
+			AlignmentType);
+}
+
+ConstraintType ConstraintInfoInternalAlignmentPoint2Ellipse::getTypeId() const
+{
+    return InternalAlignmentPoint2Ellipse;
+}
+
+ConstraintInfo* ConstraintInfoInternalAlignmentPoint2Ellipse::clone() const {
+	return new ConstraintInfoInternalAlignmentPoint2Ellipse(*this);
+}
+
+
+//  ConstraintEqualMajorAxesEllipse
+ConstraintInfoEqualMajorAxesEllipse:: ConstraintInfoEqualMajorAxesEllipse(
+		Ellipse &e1,
+		Ellipse &e2
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::e1cx ] = e1.center.x;
+    variables[ ConstraintVariables::e1cy ] = e1.center.y;
+    variables[ ConstraintVariables::e1f1x ] = e1.focus1X;
+    variables[ ConstraintVariables::e1f1y ] = e1.focus1Y;
+    variables[ ConstraintVariables::e1rmin ] = e1.radmin;
+    variables[ ConstraintVariables::e2cx ] = e2.center.x;
+    variables[ ConstraintVariables::e2cy ] = e2.center.y;
+    variables[ ConstraintVariables::e2f1x ] = e2.focus1X;
+    variables[ ConstraintVariables::e2f1y ] = e2.focus1Y;
+    variables[ ConstraintVariables::e2rmin ] = e2.radmin;
+}
+
+ConstraintInfoEqualMajorAxesEllipse:: ConstraintInfoEqualMajorAxesEllipse(
+		ArcOfEllipse &a1,
+		Ellipse &e2
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::e1cx ] = a1.center.x;
+    variables[ ConstraintVariables::e1cy ] = a1.center.y;
+    variables[ ConstraintVariables::e1f1x ] = a1.focus1X;
+    variables[ ConstraintVariables::e1f1y ] = a1.focus1Y;
+    variables[ ConstraintVariables::e1rmin ] = a1.radmin;
+    variables[ ConstraintVariables::e2cx ] = e2.center.x;
+    variables[ ConstraintVariables::e2cy ] = e2.center.y;
+    variables[ ConstraintVariables::e2f1x ] = e2.focus1X;
+    variables[ ConstraintVariables::e2f1y ] = e2.focus1Y;
+    variables[ ConstraintVariables::e2rmin ] = e2.radmin;
+}
+
+ConstraintInfoEqualMajorAxesEllipse:: ConstraintInfoEqualMajorAxesEllipse(
+		ArcOfEllipse &a1,
+		ArcOfEllipse &a2
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::e1cx ] = a1.center.x;
+    variables[ ConstraintVariables::e1cy ] = a1.center.y;
+    variables[ ConstraintVariables::e1f1x ] = a1.focus1X;
+    variables[ ConstraintVariables::e1f1y ] = a1.focus1Y;
+    variables[ ConstraintVariables::e1rmin ] = a1.radmin;
+    variables[ ConstraintVariables::e2cx ] = a2.center.x;
+    variables[ ConstraintVariables::e2cy ] = a2.center.y;
+    variables[ ConstraintVariables::e2f1x ] = a2.focus1X;
+    variables[ ConstraintVariables::e2f1y ] = a2.focus1Y;
+    variables[ ConstraintVariables::e2rmin ] = a2.radmin;
+}
+
+Constraint* ConstraintInfoEqualMajorAxesEllipse::createConstraint(SubSystem& subsys) const{
+	return new ConstraintEqualMajorAxesEllipse(
+			subsys.getVariables(),
+			subsys.getIndices(variables),
+			subsys.getDependentVariableCount(),
+			scale_coef);
+}
+
+ConstraintType ConstraintInfoEqualMajorAxesEllipse::getTypeId() const
+{
+    return EqualMajorAxesEllipse;
+}
+
+ConstraintInfo* ConstraintInfoEqualMajorAxesEllipse::clone() const{
+	return new ConstraintInfoEqualMajorAxesEllipse( *this );
+}
+
+
+
+// EllipticalArcRangeToEndPoints
+ConstraintInfoEllipticalArcRangeToEndPoints::ConstraintInfoEllipticalArcRangeToEndPoints(
+		Point &p,
+		ArcOfEllipse &a,
+		double *angle_t
+): ConstraintInfo() {
+	variables.resize( variable_count );
+    variables[ ConstraintVariables::p1x ] = p.x;
+    variables[ ConstraintVariables::p1y ] = p.y;
+    variables[ ConstraintVariables::angle ] = angle_t;
+    variables[ ConstraintVariables::cx ] = a.center.x;
+    variables[ ConstraintVariables::cy ] = a.center.y;
+    variables[ ConstraintVariables::f1x ] = a.focus1X;
+    variables[ ConstraintVariables::f1y ] = a.focus1Y;
+    variables[ ConstraintVariables::radmin ] = a.radmin;
+}
+
+Constraint* ConstraintInfoEllipticalArcRangeToEndPoints::createConstraint(SubSystem& sub_system) const {
+	return new ConstraintEllipticalArcRangeToEndPoints(
+			sub_system.getVariables(),
+			sub_system.getIndices(variables),
+			sub_system.getDependentVariableCount(),
+			scale_coef);
+}
+
+ConstraintType ConstraintInfoEllipticalArcRangeToEndPoints::getTypeId() const
+{
+    return EllipticalArcRangeToEndPoints;
+}
+
+ConstraintInfo* ConstraintInfoEllipticalArcRangeToEndPoints::clone() const {
+	return new ConstraintInfoEllipticalArcRangeToEndPoints(*this);
+}
+
 } //namespace GCS
