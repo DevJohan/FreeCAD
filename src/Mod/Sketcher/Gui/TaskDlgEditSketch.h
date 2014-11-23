@@ -82,6 +82,7 @@ protected:
 
     Connection connectUndoDocument;
     Connection connectRedoDocument;
+
     TaskSolverStatusHistory *SolverHistory;
 };
 

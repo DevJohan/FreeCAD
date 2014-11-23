@@ -4122,7 +4122,6 @@ void ViewProviderSketch::solveSketch(void)
             double solveTime = edit->ActSketch.getSolveTime();
             signalSolved(tr("Solved in %1 sec").arg(solveTime));
             signalSolveStatusUpdate( solveTime, edit->ActSketch.getLatestAlgorithm(), true);
-
         }
         else {
             double solveTime = edit->ActSketch.getSolveTime();

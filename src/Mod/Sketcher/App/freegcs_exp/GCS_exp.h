@@ -73,14 +73,13 @@ namespace GCS_EXP
 
     public:
         System();
-        System(constraits_container clist_);
+        System( constraits_container clist_ );
         ~System();
 
         void clear();
         void clearByTag(int tagId);
 
         int addReducedConstraint( ConstraintInfo *constr );
-
         int addConstraint(ConstraintInfo *constr);
         void removeConstraint(ConstraintInfo *constr);
 
